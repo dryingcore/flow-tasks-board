@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { Calendar, Clock, MoreHorizontal, Trash2, MessageSquare } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import CommentDialog from './CommentDialog';
+import { toast } from '@/components/ui/use-toast';
 
 interface TaskProps {
   task: TaskType;
@@ -42,6 +43,16 @@ const Task = ({ task, index }: TaskProps) => {
       dueDate: editedTask.dueDate,
     });
     setIsEditing(false);
+    
+    toast({
+      title: "Tarefa atualizada",
+      description: "As alterações foram salvas com sucesso."
+    });
+  };
+
+  const handleDelete = async () => {
+    await deleteTask(task.id);
+    setOpen(false);
   };
 
   const getPriorityColor = (priority: Priority) => {
@@ -107,6 +118,19 @@ const Task = ({ task, index }: TaskProps) => {
             <span>{formatDate(task.dueDate)}</span>
           </div>
         )}
+      </div>
+      
+      {/* Adicionando um botão de comentários visível */}
+      <div className="mt-2 pt-2 border-t border-border/30 flex justify-end">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => setCommentsOpen(true)} 
+          className="h-6 text-xs hover:bg-primary/10"
+        >
+          <MessageSquare size={12} className="mr-1" />
+          Comentários
+        </Button>
       </div>
       
       <Dialog open={isEditing} onOpenChange={setIsEditing}>
@@ -176,7 +200,7 @@ const Task = ({ task, index }: TaskProps) => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteTask(task.id)}>
+            <AlertDialogAction onClick={handleDelete}>
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>

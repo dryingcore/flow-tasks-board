@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Comment, Task } from '@/types/kanban';
@@ -8,6 +8,7 @@ import { useKanban } from '@/contexts/KanbanContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Send, MessageSquare, RefreshCw } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
 
 interface CommentDialogProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ const CommentDialog = ({ isOpen, onOpenChange, task }: CommentDialogProps) => {
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const loadComments = async () => {
     if (!task.apiId) return;
@@ -31,6 +33,11 @@ const CommentDialog = ({ isOpen, onOpenChange, task }: CommentDialogProps) => {
       setComments(taskComments);
     } catch (error) {
       console.error('Erro ao carregar comentários:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os comentários",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -45,17 +52,36 @@ const CommentDialog = ({ isOpen, onOpenChange, task }: CommentDialogProps) => {
   const handleAddComment = async () => {
     if (!newComment.trim() || !task.apiId) return;
     
+    setSubmitting(true);
     try {
       const comment = await addTaskComment(task.apiId, newComment.trim());
       setComments(prev => [comment, ...prev]);
       setNewComment('');
+      toast({
+        title: "Comentário adicionado",
+        description: "Seu comentário foi publicado com sucesso"
+      });
     } catch (error) {
       console.error('Erro ao adicionar comentário:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar o comentário",
+        variant: "destructive"
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Enviar comentário ao pressionar Ctrl+Enter ou Command+Enter
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      handleAddComment();
     }
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && task.apiId) {
       loadComments();
     }
   }, [isOpen, task.apiId]);
@@ -76,10 +102,17 @@ const CommentDialog = ({ isOpen, onOpenChange, task }: CommentDialogProps) => {
             placeholder="Digite seu comentário aqui..."
             value={newComment}
             onChange={(e) => setNewComment(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={submitting}
             className="resize-none"
           />
-          <Button onClick={handleAddComment} size="icon">
-            <Send className="h-4 w-4" />
+          <Button 
+            onClick={handleAddComment} 
+            size="icon"
+            disabled={!newComment.trim() || submitting}
+            aria-label="Enviar comentário"
+          >
+            <Send className={`h-4 w-4 ${submitting ? 'animate-pulse' : ''}`} />
           </Button>
         </div>
         

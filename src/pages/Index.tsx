@@ -10,6 +10,7 @@ import { Plus, RefreshCw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/components/ui/use-toast';
 
 const Index = () => {
   const { 
@@ -57,6 +58,11 @@ const Index = () => {
       addColumn(newColumnTitle);
       setNewColumnTitle('');
       setIsAddingColumn(false);
+      
+      toast({
+        title: "Coluna adicionada",
+        description: `Coluna "${newColumnTitle}" foi adicionada com sucesso.`
+      });
     }
   };
 
@@ -66,6 +72,11 @@ const Index = () => {
       await refreshData();
     } catch (error) {
       console.error('Erro ao atualizar dados:', error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar os dados do quadro.",
+        variant: "destructive"
+      });
     } finally {
       setIsRefreshing(false);
     }
