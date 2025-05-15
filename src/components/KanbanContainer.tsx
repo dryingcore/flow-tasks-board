@@ -2,21 +2,30 @@
 import { DragDropContext } from "@/components/dnd/DragDropContext";
 import Column from "@/components/Column";
 import FilterBar from "@/components/FilterBar";
-import { useContext } from "react";
 import { useKanban } from "@/contexts/KanbanContext";
 
 export const KanbanContainer = () => {
   const { state, handleDragEnd } = useKanban();
-  const { columns } = state;
+  const { columns, tasks } = state;
 
   return (
     <div className="flex flex-col gap-4">
       <FilterBar />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 xl:grid-cols-4">
         <DragDropContext onDragEnd={handleDragEnd}>
-          {Object.entries(columns).map(([columnId, column]) => (
-            <Column key={columnId} columnId={columnId} column={column} />
-          ))}
+          {Object.entries(columns).map(([columnId, column], index) => {
+            // Get tasks for this column
+            const columnTasks = column.taskIds.map(taskId => tasks[taskId]);
+            
+            return (
+              <Column 
+                key={columnId} 
+                column={column} 
+                tasks={columnTasks}
+                index={index} 
+              />
+            );
+          })}
         </DragDropContext>
       </div>
     </div>
