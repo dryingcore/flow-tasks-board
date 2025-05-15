@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { KanbanProvider } from "./contexts/kanban";
 import { AuthenticatedRoutes } from "./components/AuthenticatedRoutes";
 
 // Create a client
@@ -15,9 +16,11 @@ const App = () => (
     <BrowserRouter>
       <TooltipProvider>
         <AuthProvider>
-          <AuthenticatedRoutes />
-          <Toaster />
-          <Sonner />
+          <KanbanProvider>
+            <AuthenticatedRoutes />
+            <Toaster />
+            <Sonner />
+          </KanbanProvider>
         </AuthProvider>
       </TooltipProvider>
     </BrowserRouter>

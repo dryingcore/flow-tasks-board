@@ -1,4 +1,3 @@
-
 export type Priority = 'low' | 'medium' | 'high';
 export type ApiPriority = 'baixa' | 'media' | 'alta';
 export type ApiStatus = 'aberto' | 'em_desenvolvimento' | 'em_teste' | 'concluido' | 'liberado';

@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useKanban } from '@/contexts/KanbanContext';
+import { useKanban } from '@/contexts/kanban';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';

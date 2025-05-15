@@ -2,7 +2,7 @@
 import { DragDropContext } from "@/components/dnd/DragDropContext";
 import Column from "@/components/Column";
 import FilterBar from "@/components/FilterBar";
-import { useKanban } from "@/contexts/KanbanContext";
+import { useKanban } from "@/contexts/kanban";
 
 export const KanbanContainer = () => {
   const { state, handleDragEnd } = useKanban();

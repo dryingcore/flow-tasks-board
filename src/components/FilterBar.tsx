@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import SettingsButton from './SettingsButton';
-import { useKanban } from '@/contexts/KanbanContext';
+import { useKanban } from '@/contexts/kanban';
 import ThemeToggle from './ThemeToggle';
 import { Priority } from '@/types/kanban';
 
