@@ -1,4 +1,3 @@
-
 // Importações e mock data existentes
 import { ApiTicket, ApiComment, NewTicket, UpdateTicket, NewComment } from '../types/kanban';
 import { toast } from '@/components/ui/use-toast';
@@ -138,7 +137,7 @@ const mockComments: ApiComment[] = [
 ];
 
 // Variável para controlar quando usamos dados reais ou mock
-let useMockData = false;
+let useMockData = true; // Alterado para true por padrão até confirmação de API funcional
 
 // Função auxiliar para fazer requisições HTTP com timeout
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 8000) => {
@@ -168,6 +167,7 @@ export const checkApiConnection = async (): Promise<boolean> => {
     
     if (isConnected) {
       console.log('Conexão com a API estabelecida com sucesso!');
+      // Definimos explicitamente para não usar dados mock quando conectado
       useMockData = false;
       return true;
     } else {
@@ -176,7 +176,7 @@ export const checkApiConnection = async (): Promise<boolean> => {
       return false;
     }
   } catch (error) {
-    console.warn('Não foi possível conectar à API real, usando dados mock:', error);
+    console.error('Erro ao verificar conexão com a API:', error);
     useMockData = true;
     return false;
   }
@@ -185,6 +185,7 @@ export const checkApiConnection = async (): Promise<boolean> => {
 // Listar tickets por clínica
 export const fetchTickets = async (clinicaId: number): Promise<ApiTicket[]> => {
   console.log('Buscando tickets para a clínica:', clinicaId);
+  console.log('Usando dados mockados?', useMockData ? 'SIM' : 'NÃO');
   
   try {
     // Verificamos se estamos usando dados mock ou reais
@@ -195,16 +196,30 @@ export const fetchTickets = async (clinicaId: number): Promise<ApiTicket[]> => {
         console.log('URL para buscar tickets:', url);
         
         const response = await fetchWithTimeout(url, {
-          method: 'GET'
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
         });
         
-        await checkResponseStatus(response);
+        // Verificar se a resposta foi bem sucedida
+        if (!response.ok) {
+          throw new Error(`Erro ao buscar tickets: ${response.status} ${response.statusText}`);
+        }
+        
         const tickets = await response.json();
         console.log('Tickets recebidos da API real:', tickets);
+        
+        if (!Array.isArray(tickets)) {
+          console.error('API não retornou um array para tickets:', tickets);
+          throw new Error('Formato de resposta inválido da API');
+        }
+        
         return tickets;
       } catch (error) {
-        console.warn('Erro ao buscar da API real, usando dados mock:', error);
-        useMockData = true; // Fallback para dados mock
+        console.error('Erro ao buscar da API real:', error);
+        // Forçar uso de dados mock em caso de falha
+        useMockData = true;
       }
     }
     
@@ -490,8 +505,11 @@ export const createComment = async (comment: NewComment): Promise<ApiComment> =>
   }
 };
 
-// Inicializar a verificação da API
+// Inicializar a verificação da API - Adicionando verificação mais clara do estado
 checkApiConnection().then(isConnected => {
+  console.log(`Status da API: ${isConnected ? 'CONECTADA' : 'DESCONECTADA'}`);
+  console.log(`Usando dados: ${useMockData ? 'MOCK' : 'REAIS'}`);
+  
   if (isConnected) {
     console.log('🟢 Usando API real para operações de dados');
     toast({
