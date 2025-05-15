@@ -3,11 +3,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { KanbanProvider } from "./contexts/KanbanContext";
-import Index from "./pages/Index";
-import ApiSettings from "./pages/ApiSettings";
-import NotFound from "./pages/NotFound";
+import { BrowserRouter } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
+import { AuthenticatedRoutes } from "./components/AuthenticatedRoutes";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -16,15 +14,11 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <TooltipProvider>
-        <KanbanProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/api-settings" element={<ApiSettings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+        <AuthProvider>
+          <AuthenticatedRoutes />
           <Toaster />
           <Sonner />
-        </KanbanProvider>
+        </AuthProvider>
       </TooltipProvider>
     </BrowserRouter>
   </QueryClientProvider>
