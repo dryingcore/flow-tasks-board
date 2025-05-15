@@ -7,89 +7,29 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/use-toast";
-import { ArrowLeft, Save } from "lucide-react";
-
-interface ApiSettingsType {
-  baseUrl: string;
-  endpoints: {
-    healthCheck: string;
-    getTickets: string;
-    createTicket: string;
-    updateTicket: string;
-    deleteTicket: string;
-    getComments: string;
-    createComment: string;
-  };
-  requestBodies: {
-    createTicket: string;
-    updateTicket: string;
-    createComment: string;
-  };
-}
-
-const defaultApiSettings: ApiSettingsType = {
-  baseUrl: "https://server.starlaudo.com.br/api",
-  endpoints: {
-    healthCheck: "/health",
-    getTickets: "/tickets",
-    createTicket: "/tickets",
-    updateTicket: "/tickets/{id}",
-    deleteTicket: "/tickets/{id}",
-    getComments: "/comments",
-    createComment: "/comments",
-  },
-  requestBodies: {
-    createTicket: JSON.stringify(
-      {
-        titulo: "Título do ticket",
-        descricao: "Descrição do ticket",
-        status: "aberto",
-        prioridade: "media",
-        clinica_id: 1,
-        usuario_id: 2
-      },
-      null,
-      2
-    ),
-    updateTicket: JSON.stringify(
-      {
-        titulo: "Título atualizado",
-        descricao: "Descrição atualizada",
-        status: "em_desenvolvimento",
-        prioridade: "alta"
-      },
-      null,
-      2
-    ),
-    createComment: JSON.stringify(
-      {
-        texto: "Texto do comentário",
-        ticket_id: 1,
-        usuario_id: 2
-      },
-      null,
-      2
-    ),
-  },
-};
-
-const SETTINGS_STORAGE_KEY = "kanban-api-settings";
+import { ArrowLeft, Save, RefreshCw } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { 
+  ApiSettingsType, 
+  defaultApiSettings, 
+  getApiSettings, 
+  saveApiSettings, 
+  testApiConnection 
+} from "@/utils/apiSettingsService";
 
 const ApiSettings = () => {
-  const [settings, setSettings] = useState<ApiSettingsType>(defaultApiSettings);
+  const [settings, setSettings] = useState<ApiSettingsType>({
+    ...defaultApiSettings,
+    useProxy: true
+  });
   const [isSaving, setIsSaving] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     // Load saved settings from localStorage if available
-    const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
-    if (savedSettings) {
-      try {
-        setSettings(JSON.parse(savedSettings));
-      } catch (error) {
-        console.error("Failed to parse saved API settings:", error);
-      }
-    }
+    const savedSettings = getApiSettings();
+    setSettings(savedSettings);
   }, []);
 
   const handleSave = () => {
@@ -113,13 +53,8 @@ const ApiSettings = () => {
         },
       };
       
-      localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(formattedSettings));
+      saveApiSettings(formattedSettings);
       setSettings(formattedSettings);
-      
-      toast({
-        title: "Configurações salvas",
-        description: "As configurações da API foram salvas com sucesso.",
-      });
       
       // Reload the page to apply new settings
       window.location.reload();
@@ -135,10 +70,52 @@ const ApiSettings = () => {
     }
   };
 
+  const handleTestConnection = async () => {
+    setIsTesting(true);
+    try {
+      // Save current settings temporarily
+      const tempSettings = {
+        ...settings,
+        requestBodies: {
+          createTicket: settings.requestBodies.createTicket,
+          updateTicket: settings.requestBodies.updateTicket,
+          createComment: settings.requestBodies.createComment,
+        },
+      };
+      
+      // Save settings temporarily for the test
+      saveApiSettings(tempSettings);
+      
+      const isConnected = await testApiConnection();
+      
+      if (isConnected) {
+        toast({
+          title: "Conexão estabelecida",
+          description: "A conexão com a API foi estabelecida com sucesso!",
+        });
+      } else {
+        toast({
+          title: "Conexão falhou",
+          description: "Não foi possível conectar à API. Verifique as configurações e tente novamente.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Connection test failed:", error);
+      toast({
+        title: "Teste de conexão falhou",
+        description: "Ocorreu um erro ao testar a conexão.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   const handleReset = () => {
     if (window.confirm("Deseja realmente restaurar as configurações padrão?")) {
       setSettings(defaultApiSettings);
-      localStorage.removeItem(SETTINGS_STORAGE_KEY);
+      localStorage.removeItem("kanban-api-settings");
       toast({
         title: "Configurações restauradas",
         description: "As configurações da API foram restauradas para o padrão.",
@@ -149,15 +126,29 @@ const ApiSettings = () => {
   const handleChange = (
     section: keyof ApiSettingsType,
     field: string,
-    value: string
+    value: string | boolean
   ) => {
-    setSettings((prev) => ({
-      ...prev,
-      [section]: section === "baseUrl" ? value : {
-        ...(prev[section] as Record<string, unknown>),
-        [field]: value,
-      },
-    }));
+    setSettings((prev) => {
+      if (section === "baseUrl") {
+        return {
+          ...prev,
+          baseUrl: value as string,
+        };
+      } else if (section === "useProxy") {
+        return {
+          ...prev,
+          useProxy: value as boolean,
+        };
+      } else {
+        return {
+          ...prev,
+          [section]: {
+            ...(prev[section] as Record<string, unknown>),
+            [field]: value,
+          },
+        };
+      }
+    });
   };
 
   return (
@@ -183,14 +174,43 @@ const ApiSettings = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <Label htmlFor="baseUrl">URL Base</Label>
-              <Input
-                id="baseUrl"
-                value={settings.baseUrl}
-                onChange={(e) => handleChange("baseUrl", "", e.target.value)}
-                placeholder="https://api.exemplo.com"
-              />
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="baseUrl">URL Base</Label>
+                <Input
+                  id="baseUrl"
+                  value={settings.baseUrl}
+                  onChange={(e) => handleChange("baseUrl", "", e.target.value)}
+                  placeholder="https://api.exemplo.com"
+                />
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="useProxy"
+                  checked={settings.useProxy}
+                  onCheckedChange={(checked) => handleChange("useProxy", "", checked)}
+                />
+                <Label htmlFor="useProxy">Usar proxy para contornar problemas de CORS</Label>
+              </div>
+              
+              <Button 
+                onClick={handleTestConnection} 
+                disabled={isTesting}
+                variant="outline"
+              >
+                {isTesting ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Testando...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Testar Conexão
+                  </>
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>

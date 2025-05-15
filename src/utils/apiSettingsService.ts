@@ -19,6 +19,7 @@ export interface ApiSettingsType {
     updateTicket: string;
     createComment: string;
   };
+  useProxy: boolean;
 }
 
 export const defaultApiSettings: ApiSettingsType = {
@@ -65,6 +66,7 @@ export const defaultApiSettings: ApiSettingsType = {
       2
     ),
   },
+  useProxy: true
 };
 
 export const getApiSettings = (): ApiSettingsType => {
@@ -84,6 +86,23 @@ export const getApiSettings = (): ApiSettingsType => {
   return defaultApiSettings;
 };
 
+export const saveApiSettings = (settings: ApiSettingsType): void => {
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    toast({
+      title: "Configurações salvas",
+      description: "As configurações da API foram salvas com sucesso.",
+    });
+  } catch (error) {
+    console.error("Failed to save API settings:", error);
+    toast({
+      title: "Erro ao salvar configurações",
+      description: "Não foi possível salvar as configurações da API.",
+      variant: "destructive",
+    });
+  }
+};
+
 export const getApiUrl = (endpoint: keyof ApiSettingsType["endpoints"], id?: number): string => {
   const settings = getApiSettings();
   let path = settings.endpoints[endpoint];
@@ -99,6 +118,11 @@ export const getApiUrl = (endpoint: keyof ApiSettingsType["endpoints"], id?: num
     : settings.baseUrl;
   const pathWithSlash = path.startsWith("/") ? path : `/${path}`;
   
+  // If using proxy, prepend with proxy URL
+  if (settings.useProxy) {
+    return `/api/proxy?url=${encodeURIComponent(`${baseWithSlash}${pathWithSlash}`)}`;
+  }
+  
   return `${baseWithSlash}${pathWithSlash}`;
 };
 
@@ -113,5 +137,27 @@ export const getRequestBody = (type: keyof ApiSettingsType["requestBodies"], dat
   } catch (error) {
     console.error(`Failed to parse ${type} template:`, error);
     return data;
+  }
+};
+
+export const testApiConnection = async (): Promise<boolean> => {
+  try {
+    const url = getApiUrl('healthCheck');
+    console.log('Testing connection to API:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      mode: 'cors',
+      cache: 'no-cache',
+    });
+    
+    console.log('API test response status:', response.status);
+    return response.ok;
+  } catch (error) {
+    console.error('API connection test failed:', error);
+    return false;
   }
 };
