@@ -1,6 +1,6 @@
-
 import { ApiTicket, ApiComment, NewTicket, UpdateTicket, NewComment } from '../types/kanban';
 import { toast } from '@/components/ui/use-toast';
+import { getApiSettings, getApiUrl, getRequestBody } from '@/utils/apiSettingsService';
 
 // Mock data para usar quando a API estiver inacessível devido a problemas de CORS
 const mockTickets: ApiTicket[] = [
@@ -134,8 +134,6 @@ const mockComments: ApiComment[] = [
   }
 ];
 
-const API_BASE_URL = 'https://server.starlaudo.com.br/api';
-
 // Variável para controlar quando usamos dados reais ou mock
 let useMockData = false;
 
@@ -162,7 +160,10 @@ const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout 
 export const checkApiConnection = async (): Promise<boolean> => {
   try {
     console.log('Verificando conexão com a API...');
-    const response = await fetchWithTimeout(`${API_BASE_URL}/health`, { method: 'GET' }, 5000);
+    const url = getApiUrl('healthCheck');
+    console.log('URL de verificação:', url);
+    
+    const response = await fetchWithTimeout(url, { method: 'GET' }, 5000);
     
     if (response.ok) {
       console.log('Conexão com a API estabelecida com sucesso!');
@@ -188,7 +189,10 @@ export const fetchTickets = async (clinicaId: number): Promise<ApiTicket[]> => {
     // Verificamos se estamos usando dados mock ou reais
     if (!useMockData) {
       try {
-        const response = await fetchWithTimeout(`${API_BASE_URL}/tickets?clinica_id=${clinicaId}`, {
+        const url = `${getApiUrl('getTickets')}?clinica_id=${clinicaId}`;
+        console.log('URL para buscar tickets:', url);
+        
+        const response = await fetchWithTimeout(url, {
           method: 'GET'
         });
         
@@ -231,9 +235,16 @@ export const createTicket = async (ticket: NewTicket): Promise<ApiTicket> => {
     // Tentamos criar na API real primeiro
     if (!useMockData) {
       try {
-        const response = await fetchWithTimeout(`${API_BASE_URL}/tickets`, {
+        const url = getApiUrl('createTicket');
+        console.log('URL para criar ticket:', url);
+        
+        // Obter modelo de requisição da configuração
+        const requestBody = getRequestBody('createTicket', ticket);
+        console.log('Corpo da requisição:', requestBody);
+        
+        const response = await fetchWithTimeout(url, {
           method: 'POST',
-          body: JSON.stringify(ticket)
+          body: JSON.stringify(requestBody)
         });
         
         if (response.ok) {
@@ -284,9 +295,16 @@ export const updateTicket = async (ticketId: number, updates: UpdateTicket): Pro
     // Tentamos atualizar na API real primeiro
     if (!useMockData) {
       try {
-        const response = await fetchWithTimeout(`${API_BASE_URL}/tickets/${ticketId}`, {
+        const url = getApiUrl('updateTicket', ticketId);
+        console.log('URL para atualizar ticket:', url);
+        
+        // Obter modelo de requisição da configuração
+        const requestBody = getRequestBody('updateTicket', updates);
+        console.log('Corpo da requisição:', requestBody);
+        
+        const response = await fetchWithTimeout(url, {
           method: 'PUT',
-          body: JSON.stringify(updates)
+          body: JSON.stringify(requestBody)
         });
         
         if (response.ok) {
@@ -336,7 +354,10 @@ export const deleteTicket = async (ticketId: number): Promise<void> => {
     // Tentamos deletar na API real primeiro
     if (!useMockData) {
       try {
-        const response = await fetchWithTimeout(`${API_BASE_URL}/tickets/${ticketId}`, {
+        const url = getApiUrl('deleteTicket', ticketId);
+        console.log('URL para deletar ticket:', url);
+        
+        const response = await fetchWithTimeout(url, {
           method: 'DELETE'
         });
         
@@ -381,7 +402,10 @@ export const fetchComments = async (ticketId: number): Promise<ApiComment[]> => 
     // Verificamos se estamos usando dados mock ou reais
     if (!useMockData) {
       try {
-        const response = await fetchWithTimeout(`${API_BASE_URL}/comments?ticket_id=${ticketId}`, {
+        const url = `${getApiUrl('getComments')}?ticket_id=${ticketId}`;
+        console.log('URL para buscar comentários:', url);
+        
+        const response = await fetchWithTimeout(url, {
           method: 'GET'
         });
         
@@ -419,9 +443,16 @@ export const createComment = async (comment: NewComment): Promise<ApiComment> =>
     // Tentamos criar na API real primeiro
     if (!useMockData) {
       try {
-        const response = await fetchWithTimeout(`${API_BASE_URL}/comments`, {
+        const url = getApiUrl('createComment');
+        console.log('URL para criar comentário:', url);
+        
+        // Obter modelo de requisição da configuração
+        const requestBody = getRequestBody('createComment', comment);
+        console.log('Corpo da requisição:', requestBody);
+        
+        const response = await fetchWithTimeout(url, {
           method: 'POST',
-          body: JSON.stringify(comment)
+          body: JSON.stringify(requestBody)
         });
         
         if (response.ok) {

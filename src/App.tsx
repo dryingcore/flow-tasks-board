@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { KanbanProvider } from "./contexts/KanbanContext";
 import Index from "./pages/Index";
+import ApiSettings from "./pages/ApiSettings";
 import NotFound from "./pages/NotFound";
 
 // Create a client
@@ -18,6 +19,7 @@ const App = () => (
         <KanbanProvider>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/api-settings" element={<ApiSettings />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <Toaster />
