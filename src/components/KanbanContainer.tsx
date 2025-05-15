@@ -11,7 +11,7 @@ export const KanbanContainer = () => {
   return (
     <div className="flex flex-col gap-4">
       <FilterBar />
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="flex overflow-x-auto gap-4 pb-4">
         <DragDropContext onDragEnd={handleDragEnd}>
           {Object.entries(columns).map(([columnId, column], index) => {
             // Get tasks for this column
