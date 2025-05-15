@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { 
@@ -49,7 +50,7 @@ interface KanbanContextProps {
   isConnectedToApi: boolean;
 }
 
-const KanbanContext = createContext<KanbanContextProps | undefined>(undefined);
+export const KanbanContext = createContext<KanbanContextProps | undefined>(undefined);
 
 // Estado inicial para o kanban
 const initialState: KanbanState = {
@@ -704,7 +705,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 export const useKanban = (): KanbanContextProps => {
   const context = useContext(KanbanContext);
   if (!context) {
-    throw new Error('useKanban must be used within a KanbanProvider');
+    throw new Error("useKanban must be used within a KanbanProvider");
   }
   return context;
 };

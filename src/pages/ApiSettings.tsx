@@ -1,7 +1,7 @@
 
 import { AppLayout } from "@/components/Layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { ApiTestButton } from "@/components/ApiTestButton";
+import ApiTestButton from "@/components/ApiTestButton";
 
 const ApiSettings = () => {
   const { userData } = useAuth();

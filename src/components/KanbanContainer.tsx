@@ -1,12 +1,13 @@
 
 import { DragDropContext } from "@/components/dnd/DragDropContext";
-import { Column } from "@/components/Column";
-import { FilterBar } from "@/components/FilterBar";
+import Column from "@/components/Column";
+import FilterBar from "@/components/FilterBar";
 import { useContext } from "react";
-import { KanbanContext } from "@/contexts/KanbanContext";
+import { useKanban } from "@/contexts/KanbanContext";
 
 export const KanbanContainer = () => {
-  const { columns, handleDragEnd } = useContext(KanbanContext);
+  const { state, handleDragEnd } = useKanban();
+  const { columns } = state;
 
   return (
     <div className="flex flex-col gap-4">
