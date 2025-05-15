@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import Task from './Task';
-import { Edit, Plus, Trash2 } from 'lucide-react';
+import { Edit, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import TaskForm from './TaskForm';
 import { Droppable } from '@/components/dnd/Droppable';
 import { Draggable } from '@/components/dnd/Draggable';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface ColumnProps {
   column: ColumnType;
@@ -33,94 +34,111 @@ const Column = ({ column, tasks, index }: ColumnProps) => {
     }
   };
 
+  const taskCount = tasks.length;
+
   return (
     <Draggable draggableId={column.id} index={index} type="column">
       <div className="kanban-column">
         <div className="kanban-column-header">
-          <h2>{column.title}</h2>
-          <div className="flex">
-            <Dialog open={isEditing} onOpenChange={setIsEditing}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                  <Edit size={16} />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Editar coluna</DialogTitle>
-                </DialogHeader>
-                <div className="py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="title">Título</Label>
-                    <Input
-                      id="title"
-                      value={editedTitle}
-                      onChange={(e) => setEditedTitle(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsEditing(false)}>
-                    Cancelar
-                  </Button>
-                  <Button onClick={handleSave}>Salvar</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-              <AlertDialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 ml-1">
-                  <Trash2 size={16} />
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Tem certeza que deseja excluir a coluna "{column.title}" e todas as suas tarefas? Esta ação não pode ser desfeita.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => deleteColumn(column.id)}>
-                    Excluir
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-
-            <Dialog open={isAddingTask} onOpenChange={setIsAddingTask}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0 ml-1">
-                  <Plus size={16} />
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Adicionar tarefa em {column.title}</DialogTitle>
-                </DialogHeader>
-                <TaskForm columnId={column.id} onComplete={() => setIsAddingTask(false)} />
-              </DialogContent>
-            </Dialog>
+          <div className="flex items-center">
+            <h2>{column.title}</h2>
+            <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">{taskCount}</span>
           </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                <MoreHorizontal size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                <Edit size={14} className="mr-2" /> Renomear coluna
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDeleteDialogOpen(true)} className="text-destructive">
+                <Trash2 size={14} className="mr-2" /> Excluir coluna
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <Droppable droppableId={column.id} type="task">
           <div className="kanban-cards-container">
-            {tasks.length === 0 ? (
-              <div className="flex items-center justify-center h-24 border border-dashed rounded-md border-muted">
-                <p className="text-sm text-muted-foreground">Sem tarefas</p>
+            {tasks.map((task, taskIndex) => (
+              <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
+                <Task task={task} index={taskIndex} />
+              </Draggable>
+            ))}
+            
+            {tasks.length === 0 && (
+              <div className="flex items-center justify-center h-24 border border-dashed rounded-md border-muted text-sm text-muted-foreground">
+                Sem tarefas
               </div>
-            ) : (
-              tasks.map((task, taskIndex) => (
-                <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
-                  <Task task={task} index={taskIndex} />
-                </Draggable>
-              ))
             )}
           </div>
         </Droppable>
+        
+        {/* Botão para adicionar tarefa no estilo Trello */}
+        <div className="pt-2 mt-1">
+          <button
+            className="add-card-button"
+            onClick={() => setIsAddingTask(true)}
+          >
+            <Plus size={16} className="mr-2" />
+            Adicionar tarefa
+          </button>
+        </div>
+
+        {/* Diálogos para editar coluna, excluir coluna e adicionar tarefa */}
+        <Dialog open={isEditing} onOpenChange={setIsEditing}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Editar coluna</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="title">Título</Label>
+                <Input
+                  id="title"
+                  value={editedTitle}
+                  onChange={(e) => setEditedTitle(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditing(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSave}>Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+              <AlertDialogDescription>
+                Tem certeza que deseja excluir a coluna "{column.title}" e todas as suas tarefas? Esta ação não pode ser desfeita.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={() => deleteColumn(column.id)}>
+                Excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <Dialog open={isAddingTask} onOpenChange={setIsAddingTask}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Adicionar tarefa em {column.title}</DialogTitle>
+            </DialogHeader>
+            <TaskForm columnId={column.id} onComplete={() => setIsAddingTask(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
     </Draggable>
   );

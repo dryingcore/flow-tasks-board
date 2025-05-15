@@ -4,12 +4,18 @@ import { DragDropContext } from '@/components/dnd/DragDropContext';
 import { Droppable } from '@/components/dnd/Droppable';
 import Column from '@/components/Column';
 import FilterBar from '@/components/FilterBar';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const Index = () => {
-  const { state, handleDragEnd, searchTerm, priorityFilter } = useKanban();
+  const { state, handleDragEnd, searchTerm, priorityFilter, addColumn } = useKanban();
   const [isClient, setIsClient] = useState(false);
+  const [isAddingColumn, setIsAddingColumn] = useState(false);
+  const [newColumnTitle, setNewColumnTitle] = useState('');
   
   // Next.js hydration fix
   useEffect(() => {
@@ -36,6 +42,14 @@ const Index = () => {
       });
   };
 
+  const handleAddColumn = () => {
+    if (newColumnTitle.trim()) {
+      addColumn(newColumnTitle);
+      setNewColumnTitle('');
+      setIsAddingColumn(false);
+    }
+  };
+
   if (!isClient) {
     return (
       <div className="container max-w-full py-6">
@@ -45,18 +59,20 @@ const Index = () => {
   }
 
   return (
-    <div className="container max-w-full py-6">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold">Quadro Kanban</h1>
-        <p className="text-muted-foreground">Organize suas tarefas com arrastar e soltar</p>
-      </header>
+    <div className="max-w-full">
+      <div className="p-6 border-b sticky top-0 bg-background z-20">
+        <header className="mb-6">
+          <h1 className="text-3xl font-bold text-primary">Quadro Kanban</h1>
+          <p className="text-muted-foreground">Organize suas tarefas com arrastar e soltar</p>
+        </header>
+        
+        <FilterBar />
+      </div>
       
-      <FilterBar />
-      
-      <ScrollArea className="h-[calc(100vh-200px)] w-full">
-        <div className="p-2">
-          <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="all-columns" type="column" className="flex gap-4 overflow-x-auto pb-4 pt-2 min-h-[calc(100vh-210px)]">
+      <div className="kanban-board p-6">
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="all-columns" type="column" className="flex gap-4 overflow-x-auto pb-4 pt-2 min-h-[calc(100vh-210px)]">
+            <>
               {state.columnOrder.map((columnId, index) => {
                 const column = state.columns[columnId];
                 const tasks = getFilteredTasks(columnId);
@@ -70,10 +86,47 @@ const Index = () => {
                   />
                 );
               })}
-            </Droppable>
-          </DragDropContext>
-        </div>
-      </ScrollArea>
+              
+              {/* Botão para adicionar nova coluna ao final */}
+              <div className="min-w-[280px] max-w-[280px]">
+                <button
+                  className="column-add-button w-full"
+                  onClick={() => setIsAddingColumn(true)}
+                >
+                  <Plus size={16} className="mr-2" />
+                  <span>Adicionar coluna</span>
+                </button>
+              </div>
+            </>
+          </Droppable>
+        </DragDropContext>
+      </div>
+      
+      <Dialog open={isAddingColumn} onOpenChange={setIsAddingColumn}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adicionar nova coluna</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="columnTitle">Título da coluna</Label>
+              <Input
+                id="columnTitle"
+                value={newColumnTitle}
+                onChange={(e) => setNewColumnTitle(e.target.value)}
+                placeholder="Ex: A fazer, Em andamento, Concluído"
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddingColumn(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAddColumn}>Adicionar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
