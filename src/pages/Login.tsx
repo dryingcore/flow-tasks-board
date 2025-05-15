@@ -48,9 +48,9 @@ export default function Login() {
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">StarLaudo</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">Star Tecnologia</CardTitle>
           <CardDescription className="text-center">
-            Faça login para acessar o sistema de kanban
+            Faça login para acessar o sistema de tickets
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -127,7 +127,7 @@ export default function Login() {
         </CardContent>
         <CardFooter className="flex flex-col">
           <p className="text-center text-sm text-muted-foreground mt-4">
-            StarLaudo - Sistema de Gerenciamento de Tarefas
+            StarLaudo - Sistema de Gerenciamento de Tickets
           </p>
         </CardFooter>
       </Card>
