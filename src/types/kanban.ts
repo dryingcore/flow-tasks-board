@@ -1,3 +1,4 @@
+
 export type Priority = 'low' | 'medium' | 'high';
 export type ApiPriority = 'baixa' | 'media' | 'alta';
 export type ApiStatus = 'aberto' | 'em_desenvolvimento' | 'em_teste' | 'concluido' | 'liberado';
@@ -142,7 +143,7 @@ export interface KanbanContextProps {
   loading: boolean;
   error: string | null;
   addTask: (columnId: string, task: Omit<Task, 'id' | 'createdAt' | 'apiId'>) => Promise<Task>; 
-  updateTask: (taskId: string, updatedTask: Partial<Omit<Task, 'id>>) => Promise<void>;
+  updateTask: (taskId: string, updatedTask: Partial<Omit<Task, 'id'>>) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   addColumn: (title: string) => void;
   updateColumn: (columnId: string, title: string) => void;
