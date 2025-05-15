@@ -1,4 +1,5 @@
 
+// Importações e mock data existentes
 import { ApiTicket, ApiComment, NewTicket, UpdateTicket, NewComment } from '../types/kanban';
 import { toast } from '@/components/ui/use-toast';
 import { getApiSettings, getApiUrl, getRequestBody, testApiConnection } from '@/utils/apiSettingsService';
@@ -189,7 +190,8 @@ export const fetchTickets = async (clinicaId: number): Promise<ApiTicket[]> => {
     // Verificamos se estamos usando dados mock ou reais
     if (!useMockData) {
       try {
-        const url = `${getApiUrl('getTickets')}?clinica_id=${clinicaId}`;
+        // Usamos a rota correta com ID da clínica
+        const url = getApiUrl('getTickets', clinicaId);
         console.log('URL para buscar tickets:', url);
         
         const response = await fetchWithTimeout(url, {

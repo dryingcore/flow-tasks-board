@@ -18,12 +18,12 @@ const ApiTestButton = () => {
       if (connected) {
         toast({
           title: "API Conectada",
-          description: "A conexão com a API foi estabelecida com sucesso!",
+          description: "A conexão com a API foi estabelecida com sucesso! Atualize a página para carregar os dados reais.",
         });
       } else {
         toast({
           title: "API Desconectada",
-          description: "Não foi possível conectar à API. Verifique as configurações.",
+          description: "Não foi possível conectar à API. Verifique as configurações e o CORS no servidor.",
           variant: "destructive",
         });
       }
@@ -32,7 +32,7 @@ const ApiTestButton = () => {
       setIsConnected(false);
       toast({
         title: "Erro ao testar API",
-        description: "Ocorreu um erro ao testar a conexão com a API.",
+        description: "Ocorreu um erro ao testar a conexão com a API. Verifique o console para mais detalhes.",
         variant: "destructive",
       });
     } finally {

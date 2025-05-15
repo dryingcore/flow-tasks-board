@@ -26,7 +26,7 @@ export const defaultApiSettings: ApiSettingsType = {
   baseUrl: "https://server.starlaudo.com.br/api",
   endpoints: {
     healthCheck: "/health",
-    getTickets: "/tickets",
+    getTickets: "/tickets/clinica/{id}", // Atualizado para usar a rota correta
     createTicket: "/tickets",
     updateTicket: "/tickets/{id}",
     deleteTicket: "/tickets/{id}",
