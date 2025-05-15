@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Column as ColumnType } from '@/types/kanban';
-import { useKanban } from '@/contexts/KanbanContext';
+import { useKanban } from '@/contexts/kanban';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';

@@ -1,6 +1,7 @@
 
 import { useContext } from 'react';
 import { KanbanContext } from './KanbanContext';
+import { KanbanContextProps } from '../../types/kanban';
 
 export const useKanban = (): KanbanContextProps => {
   const context = useContext(KanbanContext);

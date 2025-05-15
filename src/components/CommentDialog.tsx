@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Comment, Task } from '@/types/kanban';
-import { useKanban } from '@/contexts/KanbanContext';
+import { useKanban } from '@/contexts/kanban';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Send, MessageSquare, RefreshCw } from 'lucide-react';

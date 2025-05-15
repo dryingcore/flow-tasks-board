@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Task as TaskType, Priority } from '@/types/kanban';
-import { useKanban } from '@/contexts/KanbanContext';
+import { useKanban } from '@/contexts/kanban';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';

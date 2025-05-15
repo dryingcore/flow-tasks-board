@@ -1,7 +1,7 @@
 
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { KanbanProvider } from "@/contexts/KanbanContext";
+import { KanbanProvider } from "@/contexts/kanban";
 import Index from "@/pages/Index";
 import ApiSettings from "@/pages/ApiSettings";
 import NotFound from "@/pages/NotFound";
