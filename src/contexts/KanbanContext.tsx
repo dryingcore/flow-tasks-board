@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { 
@@ -22,7 +23,7 @@ import {
   fetchTickets, 
   createTicket, 
   updateTicket, 
-  deleteTicket as apiDeleteTicket,
+  deleteTicket,
   fetchComments,
   createComment,
   checkApiConnection
@@ -34,7 +35,7 @@ interface KanbanContextProps {
   priorityFilter: Priority | 'all';
   loading: boolean;
   error: string | null;
-  addTask: (columnId: string, task: Omit<Task, 'id' | 'createdAt' | 'apiId'>) => Promise<Task>; // Updated to return Promise<Task>
+  addTask: (columnId: string, task: Omit<Task, 'id' | 'createdAt' | 'apiId'>) => Promise<Task>; 
   updateTask: (taskId: string, updatedTask: Partial<Omit<Task, 'id'>>) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   addColumn: (title: string) => void;
@@ -51,7 +52,7 @@ interface KanbanContextProps {
 
 const KanbanContext = createContext<KanbanContextProps | undefined>(undefined);
 
-// Estado inicial para o kanban (será substituído pelos dados da API)
+// Estado inicial para o kanban
 const initialState: KanbanState = {
   tasks: {},
   columns: {
@@ -88,9 +89,9 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [isConnectedToApi, setIsConnectedToApi] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Usuário mockado para demonstração
+  // Usuário para demonstração
   const currentUser = {
-    id: 2,  // Este ID deve corresponder a um usuário válido na API
+    id: 2,
     nome: 'Usuário Atual'
   };
 
@@ -149,29 +150,37 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           title: "API Conectada",
           description: "Usando dados reais do servidor.",
         });
+        
+        console.log('Buscando tickets da API...');
+        const tickets = await fetchTickets(1); // Buscando tickets da clínica com ID 1
+        console.log('Tickets recebidos:', tickets);
+        const newState = processApiData(tickets);
+        setState(newState);
+        saveState(newState);
+        console.log('Estado atualizado com sucesso!');
       } else {
+        setError('Não foi possível conectar à API. Verifique as configurações ou sua conexão.');
         toast({
           title: "API Desconectada",
-          description: "Usando dados simulados localmente.",
+          description: "Não foi possível conectar à API. Verifique as configurações ou sua conexão.",
           variant: "destructive",
         });
+        
+        // Não usamos dados mock, mas tentamos carregar do localStorage como último recurso
+        const savedState = loadState();
+        if (savedState) {
+          console.log('Carregando estado do localStorage como último recurso');
+          setState(savedState);
+        }
       }
-      
-      console.log('Buscando tickets da API...');
-      const tickets = await fetchTickets(1); // Buscando tickets da clínica com ID 1
-      console.log('Tickets recebidos:', tickets);
-      const newState = processApiData(tickets);
-      setState(newState);
-      saveState(newState);
-      console.log('Estado atualizado com sucesso!');
     } catch (err) {
       console.error('Erro ao carregar dados da API:', err);
-      setError('Erro ao carregar dados da API');
+      setError('Erro ao carregar dados da API. Verifique sua conexão.');
       
-      // Tentar carregar do localStorage como fallback
+      // Tentar carregar do localStorage como último recurso
       const savedState = loadState();
       if (savedState) {
-        console.log('Carregando estado do localStorage como fallback');
+        console.log('Carregando estado do localStorage como último recurso');
         setState(savedState);
       }
     } finally {
@@ -187,11 +196,19 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       const isConnected = await checkApiConnection();
       setIsConnectedToApi(isConnected);
       
-      await fetchData();
-      toast({
-        title: "Dados atualizados",
-        description: `Todos os cards foram atualizados com sucesso ${isConnected ? '(dados reais)' : '(dados simulados)'}`,
-      });
+      if (isConnected) {
+        await fetchData();
+        toast({
+          title: "Dados atualizados",
+          description: "Todos os cards foram atualizados com sucesso (dados reais)",
+        });
+      } else {
+        toast({
+          title: "API Desconectada",
+          description: "Não foi possível conectar à API para atualizar os dados.",
+          variant: "destructive",
+        });
+      }
     } catch (err) {
       toast({
         title: "Erro ao atualizar",
@@ -275,7 +292,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       console.error('Erro ao adicionar tarefa:', error);
       toast({
         title: "Erro ao adicionar tarefa",
-        description: "Não foi possível criar a tarefa. Tente novamente.",
+        description: "Não foi possível criar a tarefa. Verifique sua conexão com a API.",
         variant: "destructive",
       });
       throw error;
@@ -348,7 +365,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       console.error('Erro ao atualizar tarefa:', error);
       toast({
         title: "Erro ao atualizar",
-        description: "Não foi possível salvar as alterações. Tente novamente.",
+        description: "Não foi possível salvar as alterações. Verifique sua conexão com a API.",
         variant: "destructive",
       });
       throw error;
@@ -395,7 +412,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       console.error('Erro ao excluir tarefa:', error);
       toast({
         title: "Erro ao excluir",
-        description: "Não foi possível remover a tarefa. Tente novamente.",
+        description: "Não foi possível remover a tarefa. Verifique sua conexão com a API.",
         variant: "destructive",
       });
       throw error;
@@ -423,7 +440,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       console.error('Erro ao buscar comentários:', error);
       toast({
         title: "Erro ao carregar comentários",
-        description: "Não foi possível carregar os comentários. Tente novamente.",
+        description: "Não foi possível carregar os comentários. Verifique sua conexão com a API.",
         variant: "destructive",
       });
       
@@ -467,7 +484,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       console.error('Erro ao adicionar comentário:', error);
       toast({
         title: "Erro ao adicionar comentário",
-        description: "Não foi possível adicionar o comentário. Tente novamente.",
+        description: "Não foi possível adicionar o comentário. Verifique sua conexão com a API.",
         variant: "destructive",
       });
       throw error;

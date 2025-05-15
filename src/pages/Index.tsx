@@ -1,4 +1,3 @@
-
 import { useKanban } from '@/contexts/KanbanContext';
 import { DragDropContext } from '@/components/dnd/DragDropContext';
 import { Droppable } from '@/components/dnd/Droppable';
@@ -104,12 +103,12 @@ const Index = () => {
               {/* Status da API */}
               <Badge 
                 variant={isConnectedToApi ? "default" : "outline"}
-                className={`ml-2 ${isConnectedToApi ? 'bg-green-500 hover:bg-green-600' : 'text-orange-500 border-orange-500'}`}
+                className={`ml-2 ${isConnectedToApi ? 'bg-green-500 hover:bg-green-600' : 'text-red-500 border-red-500'}`}
               >
                 {isConnectedToApi ? (
                   <><Wifi className="h-3 w-3 mr-1" /> API Conectada</>
                 ) : (
-                  <><WifiOff className="h-3 w-3 mr-1" /> Modo Offline</>
+                  <><WifiOff className="h-3 w-3 mr-1" /> API Desconectada</>
                 )}
               </Badge>
             </div>

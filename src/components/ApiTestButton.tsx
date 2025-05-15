@@ -28,7 +28,7 @@ const ApiTestButton = () => {
       } else {
         toast({
           title: "API Desconectada",
-          description: "Não foi possível conectar à API. Verifique as configurações e o CORS no servidor.",
+          description: "Não foi possível conectar à API. Verifique as configurações da API e as permissões CORS no servidor.",
           variant: "destructive",
         });
       }
