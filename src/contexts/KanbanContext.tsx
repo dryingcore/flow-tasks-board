@@ -1,9 +1,32 @@
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { KanbanState, Task, Column, DragEndResult, Priority, ApiTicket, mapApiPriorityToKanban, mapStatusToColumn } from '../types/kanban';
+import { 
+  KanbanState, 
+  Task, 
+  Column, 
+  DragEndResult, 
+  Priority, 
+  ApiTicket, 
+  mapApiPriorityToKanban, 
+  mapStatusToColumn,
+  mapColumnToStatus,
+  mapKanbanPriorityToApi,
+  Comment, 
+  ApiComment, 
+  UpdateTicket,
+  NewTicket
+} from '../types/kanban';
 import { loadState, saveState } from '../utils/storage';
 import { toast } from '@/components/ui/use-toast';
-import { fetchTickets } from '@/services/api';
+import { 
+  fetchTickets, 
+  createTicket, 
+  updateTicket, 
+  deleteTicket as apiDeleteTicket,
+  fetchComments,
+  createComment
+} from '@/services/api';
 
 interface KanbanContextProps {
   state: KanbanState;
@@ -11,9 +34,9 @@ interface KanbanContextProps {
   priorityFilter: Priority | 'all';
   loading: boolean;
   error: string | null;
-  addTask: (columnId: string, task: Omit<Task, 'id' | 'createdAt'>) => void;
-  updateTask: (taskId: string, updatedTask: Partial<Omit<Task, 'id'>>) => void;
-  deleteTask: (taskId: string) => void;
+  addTask: (columnId: string, task: Omit<Task, 'id' | 'createdAt' | 'apiId'>) => Promise<void>;
+  updateTask: (taskId: string, updatedTask: Partial<Omit<Task, 'id'>>) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
   addColumn: (title: string) => void;
   updateColumn: (columnId: string, title: string) => void;
   deleteColumn: (columnId: string) => void;
@@ -21,6 +44,8 @@ interface KanbanContextProps {
   setSearchTerm: (term: string) => void;
   setPriorityFilter: (priority: Priority | 'all') => void;
   refreshData: () => Promise<void>;
+  fetchTaskComments: (ticketId: number) => Promise<Comment[]>;
+  addTaskComment: (ticketId: number, text: string) => Promise<Comment>;
 }
 
 const KanbanContext = createContext<KanbanContextProps | undefined>(undefined);
@@ -60,6 +85,12 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Usuário mockado para demonstração
+  const currentUser = {
+    id: 2,  // Este ID deve corresponder a um usuário válido na API
+    nome: 'Usuário Atual'
+  };
+
   // Função para converter os dados da API para o formato do Kanban
   const processApiData = (tickets: ApiTicket[]): KanbanState => {
     const newState = { ...initialState };
@@ -81,6 +112,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         description: ticket.descricao,
         priority: mapApiPriorityToKanban(ticket.prioridade),
         createdAt: ticket.createdAt,
+        apiId: ticket.id,  // Guardar o ID original da API
       };
       
       // Adicionar a tarefa ao estado
@@ -141,89 +173,239 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
   }, [state, loading, error]);
 
-  const addTask = (columnId: string, task: Omit<Task, 'id' | 'createdAt'>) => {
-    const newTaskId = `task-${uuidv4()}`;
-    const newTask: Task = {
-      ...task,
-      id: newTaskId,
-      createdAt: new Date().toISOString(),
-    };
-
-    const column = state.columns[columnId];
-
-    setState((prev) => {
-      const newState = {
-        ...prev,
-        tasks: {
-          ...prev.tasks,
-          [newTaskId]: newTask,
-        },
-        columns: {
-          ...prev.columns,
-          [columnId]: {
-            ...column,
-            taskIds: [...column.taskIds, newTaskId],
-          },
-        },
+  // Função para adicionar uma nova tarefa
+  const addTask = async (columnId: string, task: Omit<Task, 'id' | 'createdAt' | 'apiId'>) => {
+    try {
+      // Criar um novo ticket na API
+      const apiStatus = mapColumnToStatus(columnId);
+      const newApiTicket: NewTicket = {
+        titulo: task.title,
+        descricao: task.description || '',
+        status: apiStatus,
+        prioridade: mapKanbanPriorityToApi(task.priority),
+        clinica_id: 1, // ID da clínica (fixo para demonstração)
+        usuario_id: currentUser.id, // ID do usuário atual
       };
-      return newState;
-    });
-
-    toast({
-      title: "Tarefa adicionada",
-      description: `${task.title} foi adicionada com sucesso.`,
-    });
-  };
-
-  const updateTask = (taskId: string, updatedTask: Partial<Omit<Task, 'id'>>) => {
-    setState((prev) => {
-      const task = prev.tasks[taskId];
-      if (!task) return prev;
-
-      const newState = {
-        ...prev,
-        tasks: {
-          ...prev.tasks,
-          [taskId]: {
-            ...task,
-            ...updatedTask,
-          },
-        },
+      
+      // Enviar para a API
+      const createdTicket = await createTicket(newApiTicket);
+      
+      // Criar a tarefa local com o ID retornado da API
+      const newTaskId = `task-${createdTicket.id}`;
+      const newTask: Task = {
+        ...task,
+        id: newTaskId,
+        apiId: createdTicket.id,
+        createdAt: new Date().toISOString(),
       };
-      return newState;
-    });
 
-    toast({
-      title: "Tarefa atualizada",
-      description: "As alterações foram salvas com sucesso.",
-    });
-  };
+      const column = state.columns[columnId];
 
-  const deleteTask = (taskId: string) => {
-    setState((prev) => {
-      const newTasks = { ...prev.tasks };
-      delete newTasks[taskId];
-
-      const newColumns = { ...prev.columns };
-      for (const columnId in newColumns) {
-        newColumns[columnId] = {
-          ...newColumns[columnId],
-          taskIds: newColumns[columnId].taskIds.filter((id) => id !== taskId),
+      setState((prev) => {
+        const newState = {
+          ...prev,
+          tasks: {
+            ...prev.tasks,
+            [newTaskId]: newTask,
+          },
+          columns: {
+            ...prev.columns,
+            [columnId]: {
+              ...column,
+              taskIds: [...column.taskIds, newTaskId],
+            },
+          },
         };
+        return newState;
+      });
+
+      toast({
+        title: "Tarefa adicionada",
+        description: `${task.title} foi adicionada com sucesso.`,
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar tarefa:', error);
+      toast({
+        title: "Erro ao adicionar tarefa",
+        description: "Não foi possível criar a tarefa. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  // Função para atualizar uma tarefa existente
+  const updateTask = async (taskId: string, updatedTask: Partial<Omit<Task, 'id'>>) => {
+    try {
+      const task = state.columns 
+        ? Object.values(state.columns).flatMap(col => 
+            col.taskIds.filter(id => id === taskId).map(id => state.tasks[id])
+          ).find(Boolean) 
+        : null;
+      
+      if (!task || !task.apiId) {
+        throw new Error('Tarefa não encontrada');
       }
 
-      return {
-        ...prev,
-        tasks: newTasks,
-        columns: newColumns,
-      };
-    });
+      // Encontrar em qual coluna a tarefa está atualmente
+      let currentColumnId = '';
+      for (const [columnId, column] of Object.entries(state.columns)) {
+        if (column.taskIds.includes(taskId)) {
+          currentColumnId = columnId;
+          break;
+        }
+      }
 
-    toast({
-      title: "Tarefa removida",
-      description: "A tarefa foi excluída com sucesso.",
-      variant: "destructive",
-    });
+      // Preparar a atualização para a API
+      const apiUpdates: UpdateTicket = {};
+      
+      if (updatedTask.title) {
+        apiUpdates.titulo = updatedTask.title;
+      }
+      
+      if (updatedTask.description !== undefined) {
+        apiUpdates.descricao = updatedTask.description;
+      }
+      
+      if (updatedTask.priority) {
+        apiUpdates.prioridade = mapKanbanPriorityToApi(updatedTask.priority);
+      }
+      
+      // Enviar atualizações para a API
+      if (Object.keys(apiUpdates).length > 0) {
+        await updateTicket(task.apiId, apiUpdates);
+      }
+
+      // Atualizar o estado local
+      setState((prev) => {
+        const updatedTasks = {
+          ...prev.tasks,
+          [taskId]: {
+            ...prev.tasks[taskId],
+            ...updatedTask,
+          },
+        };
+        
+        return {
+          ...prev,
+          tasks: updatedTasks,
+        };
+      });
+
+      toast({
+        title: "Tarefa atualizada",
+        description: "As alterações foram salvas com sucesso.",
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar tarefa:', error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível salvar as alterações. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  // Função para excluir uma tarefa
+  const deleteTask = async (taskId: string) => {
+    try {
+      const task = state.tasks[taskId];
+      if (!task || !task.apiId) {
+        throw new Error('Tarefa não encontrada');
+      }
+
+      // Excluir na API
+      await apiDeleteTicket(task.apiId);
+
+      // Atualizar o estado local
+      setState((prev) => {
+        const newTasks = { ...prev.tasks };
+        delete newTasks[taskId];
+
+        const newColumns = { ...prev.columns };
+        for (const columnId in newColumns) {
+          newColumns[columnId] = {
+            ...newColumns[columnId],
+            taskIds: newColumns[columnId].taskIds.filter((id) => id !== taskId),
+          };
+        }
+
+        return {
+          ...prev,
+          tasks: newTasks,
+          columns: newColumns,
+        };
+      });
+
+      toast({
+        title: "Tarefa removida",
+        description: "A tarefa foi excluída com sucesso.",
+        variant: "destructive",
+      });
+    } catch (error) {
+      console.error('Erro ao excluir tarefa:', error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível remover a tarefa. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  // Buscar comentários de uma tarefa
+  const fetchTaskComments = async (ticketId: number): Promise<Comment[]> => {
+    try {
+      const apiComments = await fetchComments(ticketId);
+      return apiComments.map(comment => ({
+        id: comment.id,
+        text: comment.texto,
+        ticketId: comment.ticket_id,
+        userId: comment.usuario_id,
+        userName: comment.usuario?.nome || 'Usuário Desconhecido',
+        createdAt: comment.createdAt,
+        updatedAt: comment.updatedAt
+      }));
+    } catch (error) {
+      console.error('Erro ao buscar comentários:', error);
+      toast({
+        title: "Erro ao carregar comentários",
+        description: "Não foi possível carregar os comentários. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  // Adicionar comentário a uma tarefa
+  const addTaskComment = async (ticketId: number, text: string): Promise<Comment> => {
+    try {
+      const newApiComment = await createComment({
+        texto: text,
+        ticket_id: ticketId,
+        usuario_id: currentUser.id
+      });
+      
+      // Converter para o formato do frontend
+      return {
+        id: newApiComment.id,
+        text: newApiComment.texto,
+        ticketId: newApiComment.ticket_id,
+        userId: newApiComment.usuario_id,
+        userName: currentUser.nome,
+        createdAt: newApiComment.createdAt,
+        updatedAt: newApiComment.updatedAt
+      };
+    } catch (error) {
+      console.error('Erro ao adicionar comentário:', error);
+      toast({
+        title: "Erro ao adicionar comentário",
+        description: "Não foi possível adicionar o comentário. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   const addColumn = (title: string) => {
@@ -305,7 +487,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     });
   };
 
-  const handleDragEnd = (result: DragEndResult) => {
+  const handleDragEnd = async (result: DragEndResult) => {
     const { destination, source, draggableId, type } = result;
 
     // Drop outside a droppable area
@@ -359,28 +541,58 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     }
 
     // Moving from one column to another
-    const startTaskIds = Array.from(start.taskIds);
-    startTaskIds.splice(source.index, 1);
-    const newStart = {
-      ...start,
-      taskIds: startTaskIds,
-    };
+    try {
+      // Obter o task que está sendo movido
+      const task = state.tasks[draggableId];
+      if (!task || !task.apiId) {
+        throw new Error('Tarefa não encontrada');
+      }
 
-    const finishTaskIds = Array.from(finish.taskIds);
-    finishTaskIds.splice(destination.index, 0, draggableId);
-    const newFinish = {
-      ...finish,
-      taskIds: finishTaskIds,
-    };
+      // Mapear a nova coluna para o status correspondente na API
+      const newStatus = mapColumnToStatus(destination.droppableId);
+      
+      // Atualizar o status na API
+      await updateTicket(task.apiId, { status: newStatus });
+      
+      // Atualizar localmente
+      const startTaskIds = Array.from(start.taskIds);
+      startTaskIds.splice(source.index, 1);
+      const newStart = {
+        ...start,
+        taskIds: startTaskIds,
+      };
 
-    setState(prev => ({
-      ...prev,
-      columns: {
-        ...prev.columns,
-        [newStart.id]: newStart,
-        [newFinish.id]: newFinish,
-      },
-    }));
+      const finishTaskIds = Array.from(finish.taskIds);
+      finishTaskIds.splice(destination.index, 0, draggableId);
+      const newFinish = {
+        ...finish,
+        taskIds: finishTaskIds,
+      };
+
+      setState(prev => ({
+        ...prev,
+        columns: {
+          ...prev.columns,
+          [newStart.id]: newStart,
+          [newFinish.id]: newFinish,
+        },
+      }));
+
+      toast({
+        title: "Ticket movido",
+        description: `Ticket movido para ${finish.title}.`,
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar status do ticket:", error);
+      toast({
+        title: "Erro ao mover ticket",
+        description: "Não foi possível atualizar o status. A operação será revertida.",
+        variant: "destructive",
+      });
+      
+      // Reverter para o estado anterior em caso de erro
+      fetchData();
+    }
   };
 
   const value = {
@@ -399,6 +611,8 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setSearchTerm,
     setPriorityFilter,
     refreshData,
+    fetchTaskComments,
+    addTaskComment,
   };
 
   return <KanbanContext.Provider value={value}>{children}</KanbanContext.Provider>;

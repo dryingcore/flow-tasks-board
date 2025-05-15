@@ -4,16 +4,17 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Task as TaskType, Priority } from '@/types/kanban';
 import { useKanban } from '@/contexts/KanbanContext';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { Calendar, Clock, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Calendar, Clock, MoreHorizontal, Trash2, MessageSquare } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import CommentDialog from './CommentDialog';
 
 interface TaskProps {
   task: TaskType;
@@ -31,6 +32,7 @@ const Task = ({ task, index }: TaskProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTask, setEditedTask] = useState(task);
   const [open, setOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(false);
 
   const handleSave = () => {
     updateTask(task.id, {
@@ -40,7 +42,6 @@ const Task = ({ task, index }: TaskProps) => {
       dueDate: editedTask.dueDate,
     });
     setIsEditing(false);
-    setOpen(false);
   };
 
   const getPriorityColor = (priority: Priority) => {
@@ -77,6 +78,10 @@ const Task = ({ task, index }: TaskProps) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setCommentsOpen(true)}>
+              <MessageSquare size={14} className="mr-2" />
+              Comentários
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setIsEditing(true)}>
               Editar tarefa
             </DropdownMenuItem>
@@ -177,6 +182,13 @@ const Task = ({ task, index }: TaskProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      
+      {/* Modal de Comentários */}
+      <CommentDialog 
+        isOpen={commentsOpen} 
+        onOpenChange={setCommentsOpen} 
+        task={task} 
+      />
     </div>
   );
 };
