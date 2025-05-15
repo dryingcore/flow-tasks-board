@@ -1,14 +1,16 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { KanbanState, Task, Column, DragEndResult, Priority } from '../types/kanban';
+import { KanbanState, Task, Column, DragEndResult, Priority, ApiTicket, mapApiPriorityToKanban, mapStatusToColumn } from '../types/kanban';
 import { loadState, saveState } from '../utils/storage';
 import { toast } from '@/components/ui/use-toast';
+import { fetchTickets } from '@/services/api';
 
 interface KanbanContextProps {
   state: KanbanState;
   searchTerm: string;
   priorityFilter: Priority | 'all';
+  loading: boolean;
+  error: string | null;
   addTask: (columnId: string, task: Omit<Task, 'id' | 'createdAt'>) => void;
   updateTask: (taskId: string, updatedTask: Partial<Omit<Task, 'id'>>) => void;
   deleteTask: (taskId: string) => void;
@@ -18,19 +20,126 @@ interface KanbanContextProps {
   handleDragEnd: (result: DragEndResult) => void;
   setSearchTerm: (term: string) => void;
   setPriorityFilter: (priority: Priority | 'all') => void;
+  refreshData: () => Promise<void>;
 }
 
 const KanbanContext = createContext<KanbanContextProps | undefined>(undefined);
 
+// Estado inicial para o kanban (será substituído pelos dados da API)
+const initialState: KanbanState = {
+  tasks: {},
+  columns: {
+    'column-1': {
+      id: 'column-1',
+      title: 'A Fazer',
+      taskIds: [],
+    },
+    'column-2': {
+      id: 'column-2',
+      title: 'Em Desenvolvimento',
+      taskIds: [],
+    },
+    'column-3': {
+      id: 'column-3',
+      title: 'Em Teste',
+      taskIds: [],
+    },
+    'column-4': {
+      id: 'column-4',
+      title: 'Concluído',
+      taskIds: [],
+    },
+  },
+  columnOrder: ['column-1', 'column-2', 'column-3', 'column-4'],
+};
+
 export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<KanbanState>(loadState() || {} as KanbanState);
+  const [state, setState] = useState<KanbanState>(initialState);
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Função para converter os dados da API para o formato do Kanban
+  const processApiData = (tickets: ApiTicket[]): KanbanState => {
+    const newState = { ...initialState };
+    
+    // Limpar as listas de tarefas em cada coluna
+    Object.keys(newState.columns).forEach(columnId => {
+      newState.columns[columnId].taskIds = [];
+    });
+
+    // Processar cada ticket da API
+    tickets.forEach(ticket => {
+      // Criar um ID para a tarefa no formato que o Kanban espera
+      const taskId = `task-${ticket.id}`;
+      
+      // Converter o ticket para o formato de tarefa do Kanban
+      const task: Task = {
+        id: taskId,
+        title: ticket.titulo,
+        description: ticket.descricao,
+        priority: mapApiPriorityToKanban(ticket.prioridade),
+        createdAt: ticket.createdAt,
+      };
+      
+      // Adicionar a tarefa ao estado
+      newState.tasks[taskId] = task;
+      
+      // Mapear o status do ticket para a coluna correspondente
+      const columnId = mapStatusToColumn(ticket.status);
+      
+      // Adicionar o ID da tarefa à coluna apropriada
+      if (newState.columns[columnId]) {
+        newState.columns[columnId].taskIds.push(taskId);
+      }
+    });
+
+    return newState;
+  };
+
+  // Função para buscar dados da API
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const tickets = await fetchTickets(1); // Buscando tickets da clínica com ID 1
+      const newState = processApiData(tickets);
+      setState(newState);
+      saveState(newState);
+    } catch (err) {
+      setError('Erro ao carregar dados da API');
+      console.error(err);
+      // Tentar carregar do localStorage como fallback
+      const savedState = loadState();
+      if (savedState) {
+        setState(savedState);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Função pública para forçar a atualização dos dados
+  const refreshData = async () => {
+    await fetchData();
+    toast({
+      title: "Dados atualizados",
+      description: "Todos os cards foram atualizados com sucesso.",
+    });
+  };
+
+  // Carregar dados da API ao iniciar
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   // Save state to localStorage whenever it changes
   useEffect(() => {
-    saveState(state);
-  }, [state]);
+    if (!loading && !error) {
+      saveState(state);
+    }
+  }, [state, loading, error]);
 
   const addTask = (columnId: string, task: Omit<Task, 'id' | 'createdAt'>) => {
     const newTaskId = `task-${uuidv4()}`;
@@ -278,6 +387,8 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     state,
     searchTerm,
     priorityFilter,
+    loading,
+    error,
     addTask,
     updateTask,
     deleteTask,
@@ -287,6 +398,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     handleDragEnd,
     setSearchTerm,
     setPriorityFilter,
+    refreshData,
   };
 
   return <KanbanContext.Provider value={value}>{children}</KanbanContext.Provider>;
