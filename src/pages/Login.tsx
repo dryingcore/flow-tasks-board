@@ -49,9 +49,7 @@ export default function Login() {
       <Card className="w-full max-w-md shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">StarTickets</CardTitle>
-          <CardDescription className="text-center">
-            Faça login para acessar o sistema de tickets
-          </CardDescription>
+          
         </CardHeader>
         <CardContent>
           <Form {...form}>
