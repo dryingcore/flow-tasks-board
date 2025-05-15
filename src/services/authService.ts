@@ -1,5 +1,5 @@
 
-import { proxyFetch } from './proxyService';
+import { fetchWithProxy } from './proxyService';
 
 export interface LoginResponse {
   token: string;
@@ -14,7 +14,7 @@ export interface LoginResponse {
 
 export const login = async (email: string, password: string): Promise<LoginResponse> => {
   try {
-    const response = await proxyFetch("https://server.starlaudo.com.br/api/auth/login", {
+    const response = await fetchWithProxy("https://server.starlaudo.com.br/api/auth/login", {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
