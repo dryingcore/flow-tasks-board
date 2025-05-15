@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { 
@@ -381,7 +380,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       }
 
       // Excluir na API
-      await apiDeleteTicket(task.apiId);
+      await deleteTicket(task.apiId);
 
       // Atualizar o estado local
       setState((prev) => {
