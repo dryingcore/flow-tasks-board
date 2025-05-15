@@ -8,22 +8,23 @@ import { KanbanProvider } from "./contexts/KanbanContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
+// Create a client
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <KanbanProvider>
-        <BrowserRouter>
+    <BrowserRouter>
+      <TooltipProvider>
+        <KanbanProvider>
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </BrowserRouter>
-      </KanbanProvider>
-    </TooltipProvider>
+          <Toaster />
+          <Sonner />
+        </KanbanProvider>
+      </TooltipProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 
