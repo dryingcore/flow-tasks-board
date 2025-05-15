@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { 
@@ -34,7 +33,7 @@ interface KanbanContextProps {
   priorityFilter: Priority | 'all';
   loading: boolean;
   error: string | null;
-  addTask: (columnId: string, task: Omit<Task, 'id' | 'createdAt' | 'apiId'>) => Promise<void>;
+  addTask: (columnId: string, task: Omit<Task, 'id' | 'createdAt' | 'apiId'>) => Promise<Task>; // Updated to return Promise<Task>
   updateTask: (taskId: string, updatedTask: Partial<Omit<Task, 'id'>>) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   addColumn: (title: string) => void;
@@ -179,7 +178,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   }, [state, loading, error]);
 
   // Função para adicionar uma nova tarefa
-  const addTask = async (columnId: string, task: Omit<Task, 'id' | 'createdAt' | 'apiId'>) => {
+  const addTask = async (columnId: string, task: Omit<Task, 'id' | 'createdAt' | 'apiId'>): Promise<Task> => {
     try {
       console.log('Adicionando nova tarefa na coluna:', columnId);
       console.log('Dados da tarefa:', task);
