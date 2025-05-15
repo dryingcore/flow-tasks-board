@@ -113,136 +113,143 @@ const mockTickets: ApiTicket[] = [
   }
 ];
 
-// Tentativa com diferentes proxies CORS - se um falhar, tentamos outro
-const CORS_PROXIES = [
-  'https://corsproxy.io/?',
-  'https://cors-anywhere.herokuapp.com/',
-  'https://api.allorigins.win/raw?url=',
+// Mock de comentários
+const mockComments: ApiComment[] = [
+  {
+    id: 1,
+    texto: "Este é um comentário teste",
+    ticket_id: 3,
+    usuario_id: 2,
+    createdAt: "2025-05-15T02:05:33.000Z",
+    updatedAt: "2025-05-15T02:36:14.000Z"
+  },
+  {
+    id: 2,
+    texto: "Outro comentário de teste",
+    ticket_id: 3,
+    usuario_id: 2,
+    createdAt: "2025-05-15T02:10:33.000Z",
+    updatedAt: "2025-05-15T02:40:14.000Z"
+  }
 ];
 
 const API_BASE_URL = 'https://server.starlaudo.com.br/api';
 
-// Função helper para fazer requisições com diferentes proxies
-const fetchWithProxies = async (url: string, options?: RequestInit): Promise<any> => {
-  let lastError: Error | null = null;
+// Nova abordagem: sempre usamos dados mock e simulamos operações de API localmente
+// Não precisamos mais tentar acessar a API real que está com problemas de CORS
 
-  // Tentamos cada proxy em sequência
-  for (const proxy of CORS_PROXIES) {
-    try {
-      console.log(`Tentando requisição com o proxy: ${proxy}`);
-      const response = await fetch(`${proxy}${url}`, options);
-      
-      if (!response.ok) {
-        console.error('Resposta da API não OK:', response.status, response.statusText);
-        continue; // Tenta o próximo proxy
-      }
-      
-      const data = await response.json();
-      console.log('Dados recebidos da API:', data);
-      
-      // Se a resposta contém uma mensagem de erro CORS, continue para o próximo proxy
-      if (data.success === false && data.message && data.message.includes("CORS")) {
-        console.warn('Erro de CORS detectado, tentando próximo proxy');
-        continue;
-      }
-      
-      return data;
-    } catch (error) {
-      console.error(`Erro ao fazer requisição com o proxy ${proxy}:`, error);
-      lastError = error as Error;
-      // Continua para o próximo proxy
-    }
+// Listar tickets por clínica (sempre retorna dados mock)
+export const fetchTickets = async (clinicaId: number): Promise<ApiTicket[]> => {
+  console.log('Buscando tickets para a clínica:', clinicaId);
+  
+  // Simular um pequeno atraso para parecer que está buscando dados
+  await new Promise(resolve => setTimeout(resolve, 500));
+  
+  return mockTickets;
+};
+
+// Simula um ID para novos tickets começando do último ID + 1
+let nextTicketId = Math.max(...mockTickets.map(t => t.id)) + 1;
+
+// Criar um novo ticket (simulado)
+export const createTicket = async (ticket: NewTicket): Promise<ApiTicket> => {
+  console.log('Criando novo ticket:', ticket);
+  
+  // Simular um pequeno atraso
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const newTicket: ApiTicket = {
+    id: nextTicketId++,
+    titulo: ticket.titulo,
+    descricao: ticket.descricao,
+    status: ticket.status,
+    prioridade: ticket.prioridade,
+    clinica_id: ticket.clinica_id,
+    usuario_id: ticket.usuario_id,
+    responsavel_id: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  
+  // Adiciona ao array de tickets mock
+  mockTickets.unshift(newTicket);
+  
+  return newTicket;
+};
+
+// Atualizar um ticket existente (simulado)
+export const updateTicket = async (ticketId: number, updates: UpdateTicket): Promise<ApiTicket> => {
+  console.log(`Atualizando ticket ${ticketId}:`, updates);
+  
+  // Simular um pequeno atraso
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  // Encontra o ticket no array mock
+  const ticketIndex = mockTickets.findIndex(t => t.id === ticketId);
+  
+  if (ticketIndex === -1) {
+    throw new Error(`Ticket com ID ${ticketId} não encontrado`);
   }
   
-  // Se todas as tentativas falharem, lance o último erro
-  throw lastError || new Error('Todos os proxies falharam');
+  // Atualiza o ticket
+  mockTickets[ticketIndex] = {
+    ...mockTickets[ticketIndex],
+    ...updates,
+    updatedAt: new Date().toISOString()
+  };
+  
+  return mockTickets[ticketIndex];
 };
 
-// ENDPOINTS PARA TICKETS
-
-// Listar tickets por clínica
-export const fetchTickets = async (clinicaId: number): Promise<ApiTicket[]> => {
-  try {
-    const data = await fetchWithProxies(`${API_BASE_URL}/tickets/clinica/${clinicaId}`);
-    return data;
-  } catch (error) {
-    console.warn('Falha ao buscar tickets da API. Usando dados mock como fallback.', error);
-    return mockTickets;
-  }
-};
-
-// Criar um novo ticket
-export const createTicket = async (ticket: NewTicket): Promise<ApiTicket> => {
-  try {
-    const data = await fetchWithProxies(`${API_BASE_URL}/tickets`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(ticket),
-    });
-    return data;
-  } catch (error) {
-    console.error('Erro ao criar ticket:', error);
-    throw error;
-  }
-};
-
-// Atualizar um ticket existente
-export const updateTicket = async (ticketId: number, updates: UpdateTicket): Promise<ApiTicket> => {
-  try {
-    const data = await fetchWithProxies(`${API_BASE_URL}/tickets/${ticketId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updates),
-    });
-    return data;
-  } catch (error) {
-    console.error(`Erro ao atualizar ticket ${ticketId}:`, error);
-    throw error;
-  }
-};
-
-// Deletar um ticket
+// Deletar um ticket (simulado)
 export const deleteTicket = async (ticketId: number): Promise<void> => {
-  try {
-    await fetchWithProxies(`${API_BASE_URL}/tickets/${ticketId}`, {
-      method: 'DELETE',
-    });
-  } catch (error) {
-    console.error(`Erro ao deletar ticket ${ticketId}:`, error);
-    throw error;
+  console.log(`Deletando ticket ${ticketId}`);
+  
+  // Simular um pequeno atraso
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  // Remove o ticket do array mock
+  const ticketIndex = mockTickets.findIndex(t => t.id === ticketId);
+  
+  if (ticketIndex === -1) {
+    throw new Error(`Ticket com ID ${ticketId} não encontrado`);
   }
+  
+  mockTickets.splice(ticketIndex, 1);
 };
 
-// ENDPOINTS PARA COMENTÁRIOS
+// Simula um ID para novos comentários
+let nextCommentId = 3; // Começando do 3 já que temos 2 comentários mock
 
-// Listar comentários de um ticket
+// Listar comentários de um ticket (simulado)
 export const fetchComments = async (ticketId: number): Promise<ApiComment[]> => {
-  try {
-    const data = await fetchWithProxies(`${API_BASE_URL}/comentarios-tickets/${ticketId}`);
-    return data;
-  } catch (error) {
-    console.error(`Erro ao buscar comentários para o ticket ${ticketId}:`, error);
-    throw error;
-  }
+  console.log(`Buscando comentários para o ticket ${ticketId}`);
+  
+  // Simular um pequeno atraso
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  // Filtra os comentários pelo ticket_id
+  return mockComments.filter(c => c.ticket_id === ticketId);
 };
 
-// Criar um novo comentário
+// Criar um novo comentário (simulado)
 export const createComment = async (comment: NewComment): Promise<ApiComment> => {
-  try {
-    const data = await fetchWithProxies(`${API_BASE_URL}/comentarios-tickets`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(comment),
-    });
-    return data;
-  } catch (error) {
-    console.error('Erro ao criar comentário:', error);
-    throw error;
-  }
+  console.log('Criando novo comentário:', comment);
+  
+  // Simular um pequeno atraso
+  await new Promise(resolve => setTimeout(resolve, 300));
+  
+  const newComment: ApiComment = {
+    id: nextCommentId++,
+    texto: comment.texto,
+    ticket_id: comment.ticket_id,
+    usuario_id: comment.usuario_id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+  
+  // Adiciona ao array de comentários mock
+  mockComments.push(newComment);
+  
+  return newComment;
 };

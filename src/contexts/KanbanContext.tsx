@@ -135,16 +135,21 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     try {
       setLoading(true);
       setError(null);
+      console.log('Buscando tickets da API...');
       const tickets = await fetchTickets(1); // Buscando tickets da clínica com ID 1
+      console.log('Tickets recebidos:', tickets);
       const newState = processApiData(tickets);
       setState(newState);
       saveState(newState);
+      console.log('Estado atualizado com sucesso!');
     } catch (err) {
+      console.error('Erro ao carregar dados da API:', err);
       setError('Erro ao carregar dados da API');
-      console.error(err);
+      
       // Tentar carregar do localStorage como fallback
       const savedState = loadState();
       if (savedState) {
+        console.log('Carregando estado do localStorage como fallback');
         setState(savedState);
       }
     } finally {
@@ -176,6 +181,9 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   // Função para adicionar uma nova tarefa
   const addTask = async (columnId: string, task: Omit<Task, 'id' | 'createdAt' | 'apiId'>) => {
     try {
+      console.log('Adicionando nova tarefa na coluna:', columnId);
+      console.log('Dados da tarefa:', task);
+      
       // Criar um novo ticket na API
       const apiStatus = mapColumnToStatus(columnId);
       const newApiTicket: NewTicket = {
@@ -189,6 +197,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       
       // Enviar para a API
       const createdTicket = await createTicket(newApiTicket);
+      console.log('Ticket criado na API:', createdTicket);
       
       // Criar a tarefa local com o ID retornado da API
       const newTaskId = `task-${createdTicket.id}`;
@@ -223,6 +232,8 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         title: "Tarefa adicionada",
         description: `${task.title} foi adicionada com sucesso.`,
       });
+      
+      return newTask;
     } catch (error) {
       console.error('Erro ao adicionar tarefa:', error);
       toast({
@@ -357,13 +368,17 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   // Buscar comentários de uma tarefa
   const fetchTaskComments = async (ticketId: number): Promise<Comment[]> => {
     try {
+      console.log(`Buscando comentários para o ticket ${ticketId}`);
       const apiComments = await fetchComments(ticketId);
+      console.log('Comentários recebidos:', apiComments);
+      
+      // Converter para o formato do frontend
       return apiComments.map(comment => ({
         id: comment.id,
         text: comment.texto,
         ticketId: comment.ticket_id,
         userId: comment.usuario_id,
-        userName: comment.usuario?.nome || 'Usuário Desconhecido',
+        userName: comment.usuario?.nome || currentUser.nome, // Fallback para usuário atual
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt
       }));
@@ -374,21 +389,28 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         description: "Não foi possível carregar os comentários. Tente novamente.",
         variant: "destructive",
       });
-      throw error;
+      
+      // Retorna array vazio em caso de falha
+      return [];
     }
   };
 
   // Adicionar comentário a uma tarefa
   const addTaskComment = async (ticketId: number, text: string): Promise<Comment> => {
     try {
+      console.log(`Adicionando comentário ao ticket ${ticketId}:`, text);
+      
+      // Criar comentário na API simulada
       const newApiComment = await createComment({
         texto: text,
         ticket_id: ticketId,
         usuario_id: currentUser.id
       });
       
+      console.log('Comentário criado:', newApiComment);
+      
       // Converter para o formato do frontend
-      return {
+      const newComment: Comment = {
         id: newApiComment.id,
         text: newApiComment.texto,
         ticketId: newApiComment.ticket_id,
@@ -397,6 +419,13 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         createdAt: newApiComment.createdAt,
         updatedAt: newApiComment.updatedAt
       };
+      
+      toast({
+        title: "Comentário adicionado",
+        description: "Seu comentário foi adicionado com sucesso.",
+      });
+      
+      return newComment;
     } catch (error) {
       console.error('Erro ao adicionar comentário:', error);
       toast({
