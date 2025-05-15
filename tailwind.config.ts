@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				kanban: {
+					low: 'hsl(var(--kanban-low))',
+					medium: 'hsl(var(--kanban-medium))',
+					high: 'hsl(var(--kanban-high))',
+					'column-bg': 'hsl(var(--kanban-column-bg))',
+				},
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -84,11 +91,32 @@ export default {
 					to: {
 						height: '0'
 					}
-				}
+				},
+				'card-pop': {
+					'0%': { 
+						transform: 'scale(1)'
+					},
+					'50%': { 
+						transform: 'scale(1.02)'
+					},
+					'100%': { 
+						transform: 'scale(1)'
+					}
+				},
+				'fade-in': {
+					from: { 
+						opacity: '0',
+					},
+					to: { 
+						opacity: '1',
+					}
+				},
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'card-pop': 'card-pop 0.3s ease-in-out',
+				'fade-in': 'fade-in 0.2s ease-out',
 			}
 		}
 	},

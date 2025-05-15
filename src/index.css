@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -35,20 +36,19 @@
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Kanban specific colors */
+    --kanban-low: 142 76% 36%;
+    --kanban-medium: 43 96% 58%;
+    --kanban-high: 0 84% 60%;
+    --kanban-column-bg: 220 14% 96%;
   }
 
   .dark {
@@ -79,6 +79,7 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
+    
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -87,6 +88,12 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Kanban specific dark colors */
+    --kanban-low: 142 76% 45%;
+    --kanban-medium: 43 96% 58%;
+    --kanban-high: 0 72% 65%;
+    --kanban-column-bg: 220 14% 10%;
   }
 }
 
@@ -97,5 +104,39 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .kanban-column {
+    @apply bg-kanban-column-bg rounded-md shadow-sm p-3 min-w-[300px] h-[calc(100vh-120px)] flex flex-col;
+  }
+  
+  .kanban-column-header {
+    @apply font-semibold text-lg mb-2 flex justify-between items-center sticky top-0 py-2;
+  }
+  
+  .kanban-cards-container {
+    @apply flex-grow overflow-y-auto space-y-2 p-1;
+  }
+  
+  .task-card {
+    @apply bg-card rounded-md p-3 shadow-sm border border-border cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow;
+  }
+  
+  .priority-indicator {
+    @apply h-2 w-2 rounded-full inline-block mr-2;
+  }
+  
+  .priority-low {
+    @apply bg-kanban-low;
+  }
+  
+  .priority-medium {
+    @apply bg-kanban-medium;
+  }
+  
+  .priority-high {
+    @apply bg-kanban-high;
   }
 }
