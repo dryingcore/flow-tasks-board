@@ -1,15 +1,21 @@
 
 import { ApiTicket } from '../types/kanban';
 
-const API_BASE_URL = 'https://server.starlaudo.com.br/api';
+// Mudando para usar um proxy CORS para evitar problemas de bloqueio
+const API_BASE_URL = 'https://corsproxy.io/?https://server.starlaudo.com.br/api';
 
 export const fetchTickets = async (clinicaId: number): Promise<ApiTicket[]> => {
   try {
+    console.log('Buscando tickets da API...');
     const response = await fetch(`${API_BASE_URL}/tickets/clinica/${clinicaId}`);
+    
     if (!response.ok) {
+      console.error('Resposta da API não OK:', response.status, response.statusText);
       throw new Error(`Erro ao buscar tickets: ${response.statusText}`);
     }
+    
     const data = await response.json();
+    console.log('Dados recebidos da API:', data);
     return data;
   } catch (error) {
     console.error('Erro ao buscar tickets da API:', error);
