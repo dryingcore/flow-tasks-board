@@ -6,11 +6,12 @@ import Column from '@/components/Column';
 import FilterBar from '@/components/FilterBar';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 const Index = () => {
   const { 
@@ -21,7 +22,8 @@ const Index = () => {
     addColumn,
     loading,
     error,
-    refreshData
+    refreshData,
+    isConnectedToApi
   } = useKanban();
   const [isClient, setIsClient] = useState(false);
   const [isAddingColumn, setIsAddingColumn] = useState(false);
@@ -96,7 +98,21 @@ const Index = () => {
         <header className="mb-4 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-primary">Quadro Kanban</h1>
-            <p className="text-muted-foreground">Organize suas tarefas com arrastar e soltar</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-muted-foreground">Organize suas tarefas com arrastar e soltar</p>
+              
+              {/* Status da API */}
+              <Badge 
+                variant={isConnectedToApi ? "default" : "outline"}
+                className={`ml-2 ${isConnectedToApi ? 'bg-green-500 hover:bg-green-600' : 'text-orange-500 border-orange-500'}`}
+              >
+                {isConnectedToApi ? (
+                  <><Wifi className="h-3 w-3 mr-1" /> API Conectada</>
+                ) : (
+                  <><WifiOff className="h-3 w-3 mr-1" /> Modo Offline</>
+                )}
+              </Badge>
+            </div>
           </div>
           <Button 
             variant="outline" 

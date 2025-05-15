@@ -1,4 +1,3 @@
-
 export type Priority = 'low' | 'medium' | 'high';
 export type ApiPriority = 'baixa' | 'media' | 'alta';
 export type ApiStatus = 'aberto' | 'em_desenvolvimento' | 'em_teste' | 'concluido' | 'liberado';
@@ -135,3 +134,24 @@ export const mapColumnToStatus = (columnId: string): ApiStatus => {
     default: return 'aberto';
   }
 };
+
+export interface KanbanContextProps {
+  state: KanbanState;
+  searchTerm: string;
+  priorityFilter: Priority | 'all';
+  loading: boolean;
+  error: string | null;
+  addTask: (columnId: string, task: Omit<Task, 'id' | 'createdAt' | 'apiId'>) => Promise<Task>; 
+  updateTask: (taskId: string, updatedTask: Partial<Omit<Task, 'id>>) => Promise<void>;
+  deleteTask: (taskId: string) => Promise<void>;
+  addColumn: (title: string) => void;
+  updateColumn: (columnId: string, title: string) => void;
+  deleteColumn: (columnId: string) => void;
+  handleDragEnd: (result: DragEndResult) => void;
+  setSearchTerm: (term: string) => void;
+  setPriorityFilter: (priority: Priority | 'all') => void;
+  refreshData: () => Promise<void>;
+  fetchTaskComments: (ticketId: number) => Promise<Comment[]>;
+  addTaskComment: (ticketId: number, text: string) => Promise<Comment>;
+  isConnectedToApi?: boolean;
+}

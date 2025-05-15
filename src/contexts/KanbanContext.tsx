@@ -24,7 +24,8 @@ import {
   updateTicket, 
   deleteTicket as apiDeleteTicket,
   fetchComments,
-  createComment
+  createComment,
+  checkApiConnection
 } from '@/services/api';
 
 interface KanbanContextProps {
@@ -45,6 +46,7 @@ interface KanbanContextProps {
   refreshData: () => Promise<void>;
   fetchTaskComments: (ticketId: number) => Promise<Comment[]>;
   addTaskComment: (ticketId: number, text: string) => Promise<Comment>;
+  isConnectedToApi: boolean;
 }
 
 const KanbanContext = createContext<KanbanContextProps | undefined>(undefined);
@@ -83,6 +85,8 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'all'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isConnectedToApi, setIsConnectedToApi] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Usuário mockado para demonstração
   const currentUser = {
@@ -134,6 +138,25 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     try {
       setLoading(true);
       setError(null);
+      console.log('Verificando conexão com a API...');
+      
+      // Verificar a conexão com a API primeiro
+      const isConnected = await checkApiConnection();
+      setIsConnectedToApi(isConnected);
+      
+      if (isConnected) {
+        toast({
+          title: "API Conectada",
+          description: "Usando dados reais do servidor.",
+        });
+      } else {
+        toast({
+          title: "API Desconectada",
+          description: "Usando dados simulados localmente.",
+          variant: "destructive",
+        });
+      }
+      
       console.log('Buscando tickets da API...');
       const tickets = await fetchTickets(1); // Buscando tickets da clínica com ID 1
       console.log('Tickets recebidos:', tickets);
@@ -158,11 +181,26 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   // Função pública para forçar a atualização dos dados
   const refreshData = async () => {
-    await fetchData();
-    toast({
-      title: "Dados atualizados",
-      description: "Todos os cards foram atualizados com sucesso.",
-    });
+    setIsRefreshing(true);
+    try {
+      // Verificar conexão com a API novamente
+      const isConnected = await checkApiConnection();
+      setIsConnectedToApi(isConnected);
+      
+      await fetchData();
+      toast({
+        title: "Dados atualizados",
+        description: `Todos os cards foram atualizados com sucesso ${isConnected ? '(dados reais)' : '(dados simulados)'}`,
+      });
+    } catch (err) {
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar os dados.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   // Carregar dados da API ao iniciar
@@ -641,6 +679,7 @@ export const KanbanProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     refreshData,
     fetchTaskComments,
     addTaskComment,
+    isConnectedToApi
   };
 
   return <KanbanContext.Provider value={value}>{children}</KanbanContext.Provider>;
