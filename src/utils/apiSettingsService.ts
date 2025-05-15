@@ -30,8 +30,8 @@ export const defaultApiSettings: ApiSettingsType = {
     createTicket: "/tickets",
     updateTicket: "/tickets/{id}",
     deleteTicket: "/tickets/{id}",
-    getComments: "/comments",
-    createComment: "/comments",
+    getComments: "/comentarios-tickets/{id}", // Rota atualizada para comentários
+    createComment: "/comentarios-tickets", // Rota atualizada para criar comentários
   },
   requestBodies: {
     createTicket: JSON.stringify(
@@ -58,9 +58,9 @@ export const defaultApiSettings: ApiSettingsType = {
     ),
     createComment: JSON.stringify(
       {
-        texto: "Texto do comentário",
         ticket_id: 1,
-        usuario_id: 2
+        usuario_id: 2,
+        comentario: "Este é um comentário de teste." // Campo atualizado de 'texto' para 'comentario'
       },
       null,
       2

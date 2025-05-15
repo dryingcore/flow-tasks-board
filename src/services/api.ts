@@ -416,17 +416,32 @@ export const fetchComments = async (ticketId: number): Promise<ApiComment[]> => 
     // Verificamos se estamos usando dados mock ou reais
     if (!useMockData) {
       try {
-        const url = `${getApiUrl('getComments')}?ticket_id=${ticketId}`;
+        // Usar a nova rota de comentários com o ID do ticket
+        const url = getApiUrl('getComments', ticketId);
         console.log('URL para buscar comentários:', url);
         
         const response = await fetchWithTimeout(url, {
-          method: 'GET'
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
         });
         
         if (response.ok) {
           const comments = await response.json();
           console.log('Comentários recebidos da API real:', comments);
-          return comments;
+          
+          // Mapeia os campos da API para o formato interno
+          const mappedComments = comments.map((comment: any) => ({
+            id: comment.id,
+            texto: comment.comentario, // Mapeia 'comentario' para 'texto' internamente
+            ticket_id: comment.ticket_id,
+            usuario_id: comment.usuario_id,
+            createdAt: comment.createdAt || comment.created_at || new Date().toISOString(),
+            updatedAt: comment.updatedAt || comment.updated_at || new Date().toISOString()
+          }));
+          
+          return mappedComments;
         } else {
           throw new Error(`Erro ao buscar comentários: ${response.status}`);
         }
@@ -436,7 +451,7 @@ export const fetchComments = async (ticketId: number): Promise<ApiComment[]> => 
       }
     }
     
-    // Simulação de busca local
+    // Simulação de busca local de comentários
     await new Promise(resolve => setTimeout(resolve, 300));
     
     // Filtra os comentários pelo ticket_id
@@ -460,19 +475,38 @@ export const createComment = async (comment: NewComment): Promise<ApiComment> =>
         const url = getApiUrl('createComment');
         console.log('URL para criar comentário:', url);
         
-        // Obter modelo de requisição da configuração
-        const requestBody = getRequestBody('createComment', comment);
+        // Adaptar para o formato que a API espera
+        const requestBody = {
+          ticket_id: comment.ticket_id,
+          usuario_id: comment.usuario_id,
+          comentario: comment.texto // A API espera 'comentario', não 'texto'
+        };
+        
         console.log('Corpo da requisição:', requestBody);
         
         const response = await fetchWithTimeout(url, {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify(requestBody)
         });
         
         if (response.ok) {
           const createdComment = await response.json();
           console.log('Comentário criado na API real:', createdComment);
-          return createdComment;
+          
+          // Converter resposta da API para o formato interno
+          const mappedComment: ApiComment = {
+            id: createdComment.id,
+            texto: createdComment.comentario, // Mapeia 'comentario' para 'texto' internamente
+            ticket_id: createdComment.ticket_id,
+            usuario_id: createdComment.usuario_id,
+            createdAt: createdComment.createdAt || createdComment.created_at || new Date().toISOString(),
+            updatedAt: createdComment.updatedAt || createdComment.updated_at || new Date().toISOString()
+          };
+          
+          return mappedComment;
         } else {
           throw new Error(`Erro ao criar comentário: ${response.status}`);
         }
