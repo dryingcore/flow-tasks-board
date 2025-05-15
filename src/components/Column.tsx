@@ -2,8 +2,8 @@
 import { useState } from 'react';
 import { Column as ColumnType } from '@/types/kanban';
 import { useKanban } from '@/contexts/kanban';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -38,9 +38,9 @@ const Column = ({ column, tasks, index }: ColumnProps) => {
 
   return (
     <Draggable draggableId={column.id} index={index} type="column">
-      <div className="kanban-column">
+      <div className="kanban-column min-w-[300px] w-[300px] flex-shrink-0 bg-card rounded-lg border shadow-sm overflow-hidden">
         {/* Column header with draggable handle */}
-        <div className="kanban-column-header" data-drag-handle>
+        <div className="kanban-column-header p-3 font-medium border-b flex items-center justify-between bg-muted/50" data-drag-handle>
           <div className="flex items-center">
             <h2>{column.title}</h2>
             <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">{taskCount}</span>
@@ -64,7 +64,7 @@ const Column = ({ column, tasks, index }: ColumnProps) => {
 
         {/* Tasks container - separate from column header */}
         <Droppable droppableId={column.id} type="task">
-          <div className="kanban-cards-container">
+          <div className="kanban-cards-container p-2 flex flex-col gap-2 h-[calc(100vh-240px)] overflow-y-auto">
             {tasks.map((task, taskIndex) => (
               <Draggable key={task.id} draggableId={task.id} index={taskIndex} type="task">
                 <Task task={task} index={taskIndex} />
@@ -80,9 +80,9 @@ const Column = ({ column, tasks, index }: ColumnProps) => {
         </Droppable>
         
         {/* Botão para adicionar tarefa no estilo Trello */}
-        <div className="pt-2 mt-1">
+        <div className="pt-2 mt-1 p-2">
           <button
-            className="add-card-button"
+            className="add-card-button w-full text-left px-3 py-1.5 rounded text-sm bg-muted/50 hover:bg-muted transition-colors flex items-center"
             onClick={() => setIsAddingTask(true)}
           >
             <Plus size={16} className="mr-2" />
