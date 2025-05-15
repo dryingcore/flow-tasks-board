@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 interface ColumnProps {
   column: ColumnType;
-  tasks: Array<{ id: string; title: string; description?: string; priority: 'low' | 'medium' | 'high'; dueDate?: string; createdAt: string }>;
+  tasks: Array<{ id: string; title: string; description?: string; priority: 'low' | 'medium' | 'high'; dueDate?: string; createdAt: string; apiId: number }>;
   index: number;
 }
 

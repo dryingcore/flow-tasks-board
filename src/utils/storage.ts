@@ -11,14 +11,16 @@ export const DEFAULT_STATE: KanbanState = {
       description: 'Desenvolver mockups e wireframes para o aplicativo', 
       priority: 'high', 
       dueDate: '2023-05-25',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      apiId: 1  // Added the required apiId property
     },
     'task-2': { 
       id: 'task-2', 
       title: 'Configurar ambiente de desenvolvimento', 
       description: 'Instalar dependências e configurar o projeto', 
       priority: 'medium',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      apiId: 2  // Added the required apiId property
     },
     'task-3': { 
       id: 'task-3', 
@@ -26,7 +28,8 @@ export const DEFAULT_STATE: KanbanState = {
       description: 'Criar componentes reutilizáveis para a interface', 
       priority: 'low',
       dueDate: '2023-06-10',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      apiId: 3  // Added the required apiId property
     },
   },
   columns: {
