@@ -39,7 +39,8 @@ const Column = ({ column, tasks, index }: ColumnProps) => {
   return (
     <Draggable draggableId={column.id} index={index} type="column">
       <div className="kanban-column">
-        <div className="kanban-column-header">
+        {/* Column header with draggable handle */}
+        <div className="kanban-column-header" data-drag-handle>
           <div className="flex items-center">
             <h2>{column.title}</h2>
             <span className="ml-2 text-xs bg-muted px-2 py-0.5 rounded-full">{taskCount}</span>
@@ -61,10 +62,11 @@ const Column = ({ column, tasks, index }: ColumnProps) => {
           </DropdownMenu>
         </div>
 
+        {/* Tasks container - separate from column header */}
         <Droppable droppableId={column.id} type="task">
           <div className="kanban-cards-container">
             {tasks.map((task, taskIndex) => (
-              <Draggable key={task.id} draggableId={task.id} index={taskIndex}>
+              <Draggable key={task.id} draggableId={task.id} index={taskIndex} type="task">
                 <Task task={task} index={taskIndex} />
               </Draggable>
             ))}

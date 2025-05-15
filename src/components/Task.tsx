@@ -63,7 +63,7 @@ const Task = ({ task, index }: TaskProps) => {
   };
 
   return (
-    <div className="task-card group animate-fade-in">
+    <div className="task-card group animate-fade-in" data-drag-handle>
       <div className="flex justify-between items-start mb-2">
         <div>
           <span className={cn('priority-indicator', getPriorityColor(task.priority))} />

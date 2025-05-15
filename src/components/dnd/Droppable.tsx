@@ -1,5 +1,5 @@
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface DroppableProps {
@@ -73,5 +73,3 @@ export const Droppable: React.FC<DroppableProps> = ({ children, droppableId, typ
     </div>
   );
 };
-
-import { useState } from 'react';

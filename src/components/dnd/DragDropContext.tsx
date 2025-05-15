@@ -35,9 +35,14 @@ export const DragDropContext: React.FC<DragDropContextProps> = ({ children, onDr
     const droppable = document.querySelector(`[data-droppable-id="${droppableId}"]`);
     if (!droppable) return 0;
     
+    const draggableType = dragState?.type || 'default';
+    
     const draggables = Array.from(
-      droppable.querySelectorAll('[data-draggable-id]')
-    ).filter(el => !el.getAttribute('data-draggable-id')?.includes(dragState?.draggableId || ''));
+      droppable.querySelectorAll(`[data-draggable-id][data-type="${draggableType}"]`)
+    ).filter(el => {
+      const elId = el.getAttribute('data-draggable-id');
+      return elId !== dragState?.draggableId;
+    });
     
     if (draggables.length === 0) return 0;
     
@@ -98,13 +103,16 @@ export const DragDropContext: React.FC<DragDropContextProps> = ({ children, onDr
       dx: 0,
       dy: 0
     });
+    
+    // Add a class to the body to change cursor
+    document.body.classList.add('dragging');
   };
   
   const handleDragMove = (e: Event) => {
     const customEvent = e as CustomEvent;
-    const { clientX, clientY, dx, dy } = customEvent.detail;
+    const { clientX, clientY, dx, dy, type } = customEvent.detail;
     
-    if (dragState && dragCloneRef.current) {
+    if (dragState && dragCloneRef.current && dragState.type === type) {
       const clone = dragCloneRef.current.firstChild as HTMLElement;
       
       // Update clone position
@@ -120,14 +128,20 @@ export const DragDropContext: React.FC<DragDropContextProps> = ({ children, onDr
     }
   };
   
-  const handleDragEnd = () => {
-    if (!dragState) return;
+  const handleDragEnd = (e: Event) => {
+    const customEvent = e as CustomEvent;
+    const { type } = customEvent.detail;
+    
+    if (!dragState || dragState.type !== type) return;
     
     // Clean up drag clone
     if (dragCloneRef.current) {
       document.body.removeChild(dragCloneRef.current);
       dragCloneRef.current = null;
     }
+    
+    // Remove dragging class from body
+    document.body.classList.remove('dragging');
     
     // If we have a destination droppable, call onDragEnd
     if (currentDroppable) {
@@ -153,7 +167,9 @@ export const DragDropContext: React.FC<DragDropContextProps> = ({ children, onDr
   
   const handleDroppableOver = (e: Event) => {
     const customEvent = e as CustomEvent;
-    const { droppableId } = customEvent.detail;
+    const { droppableId, draggableId } = customEvent.detail;
+    
+    if (!dragState || dragState.draggableId !== draggableId) return;
     
     if (droppableId !== currentDroppable) {
       setCurrentDroppable(droppableId);

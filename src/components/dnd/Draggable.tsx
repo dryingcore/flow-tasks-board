@@ -24,12 +24,35 @@ export const Draggable: React.FC<DraggableProps> = ({ children, draggableId, ind
     let startX = 0;
     let startY = 0;
     let isDragging = false;
+    let dragHandle: HTMLElement | null = null;
+    
+    // Find the drag handle or use the element itself
+    const findDragHandle = (element: HTMLElement): HTMLElement => {
+      const handle = element.querySelector('[data-drag-handle]');
+      return (handle as HTMLElement) || element;
+    };
     
     const handleDragStart = (e: MouseEvent) => {
-      if (e.button !== 0) return; // Only left click
+      // Skip if not left click
+      if (e.button !== 0) return;
+      
+      // Only start drag from the drag handle or if no drag handle is specified
+      const targetElement = e.target as HTMLElement;
+      dragHandle = findDragHandle(el);
+      
+      // Check if the clicked element is the drag handle or its descendant
+      if (dragHandle !== targetElement && !dragHandle.contains(targetElement)) {
+        return;
+      }
+      
+      // Check if we're trying to drag from a nested draggable's handle
+      if (targetElement.closest('[data-draggable-id]') !== el) {
+        // The click originated from a nested draggable, don't start the drag
+        return;
+      }
       
       e.preventDefault();
-      const target = e.currentTarget as HTMLElement;
+      e.stopPropagation(); // Stop event bubbling to prevent parent draggables from activating
       
       startX = e.clientX;
       startY = e.clientY;
@@ -42,11 +65,11 @@ export const Draggable: React.FC<DraggableProps> = ({ children, draggableId, ind
           draggableId,
           index,
           type,
-          source: target,
+          source: el,
         }
       });
       
-      target.dispatchEvent(startEvent);
+      document.dispatchEvent(startEvent);
       setIsDragging(true);
       
       document.addEventListener('mousemove', handleDragMove);
@@ -61,6 +84,7 @@ export const Draggable: React.FC<DraggableProps> = ({ children, draggableId, ind
         bubbles: true,
         detail: {
           draggableId,
+          type,
           clientX: e.clientX,
           clientY: e.clientY,
           dx: e.clientX - startX,
@@ -82,6 +106,7 @@ export const Draggable: React.FC<DraggableProps> = ({ children, draggableId, ind
         bubbles: true,
         detail: {
           draggableId,
+          type,
         }
       });
       
