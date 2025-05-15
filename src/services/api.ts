@@ -4,7 +4,7 @@ import { toast } from '@/components/ui/use-toast';
 import { getApiSettings, getApiUrl, getRequestBody, testApiConnection } from '@/utils/apiSettingsService';
 import { fetchWithProxy, checkResponseStatus } from './proxyService';
 
-// Mock data para usar quando a API estiver inacessível devido a problemas de CORS
+// Mock data para usar apenas em caso de falha na API
 const mockTickets: ApiTicket[] = [
   {
     id: 10,
@@ -137,7 +137,8 @@ const mockComments: ApiComment[] = [
 ];
 
 // Variável para controlar quando usamos dados reais ou mock
-let useMockData = true; // Alterado para true por padrão até confirmação de API funcional
+// Agora, por padrão, usamos dados reais
+let useMockData = false;
 
 // Função auxiliar para fazer requisições HTTP com timeout
 const fetchWithTimeout = async (url: string, options: RequestInit = {}, timeout = 8000) => {
@@ -167,11 +168,12 @@ export const checkApiConnection = async (): Promise<boolean> => {
     
     if (isConnected) {
       console.log('Conexão com a API estabelecida com sucesso!');
-      // Definimos explicitamente para não usar dados mock quando conectado
+      // Sempre definimos para usar dados reais quando conectado
       useMockData = false;
       return true;
     } else {
       console.warn('API respondeu, mas com status de erro ou não foi possível conectar');
+      // Só usamos dados mock em caso de erro
       useMockData = true;
       return false;
     }
@@ -188,53 +190,62 @@ export const fetchTickets = async (clinicaId: number): Promise<ApiTicket[]> => {
   console.log('Usando dados mockados?', useMockData ? 'SIM' : 'NÃO');
   
   try {
-    // Verificamos se estamos usando dados mock ou reais
-    if (!useMockData) {
-      try {
-        // Usamos a rota correta com ID da clínica
-        const url = getApiUrl('getTickets', clinicaId);
-        console.log('URL para buscar tickets:', url);
-        
-        const response = await fetchWithTimeout(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        // Verificar se a resposta foi bem sucedida
-        if (!response.ok) {
-          throw new Error(`Erro ao buscar tickets: ${response.status} ${response.statusText}`);
+    // Tentamos sempre usar dados reais primeiro
+    try {
+      // Usamos a rota correta com ID da clínica
+      const url = getApiUrl('getTickets', clinicaId);
+      console.log('URL para buscar tickets:', url);
+      
+      const response = await fetchWithTimeout(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
         }
-        
-        const tickets = await response.json();
-        console.log('Tickets recebidos da API real:', tickets);
-        
-        if (!Array.isArray(tickets)) {
-          console.error('API não retornou um array para tickets:', tickets);
-          throw new Error('Formato de resposta inválido da API');
-        }
-        
-        return tickets;
-      } catch (error) {
-        console.error('Erro ao buscar da API real:', error);
-        // Forçar uso de dados mock em caso de falha
-        useMockData = true;
+      });
+      
+      // Verificar se a resposta foi bem sucedida
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar tickets: ${response.status} ${response.statusText}`);
       }
+      
+      const tickets = await response.json();
+      console.log('Tickets recebidos da API real:', tickets);
+      
+      if (!Array.isArray(tickets)) {
+        console.error('API não retornou um array para tickets:', tickets);
+        throw new Error('Formato de resposta inválido da API');
+      }
+      
+      // Retornamos dados reais da API
+      return tickets;
+    } catch (error) {
+      console.error('Erro ao buscar da API real:', error);
+      
+      // Notificamos ao usuário que houve erro na API
+      toast({
+        title: "Erro ao buscar tickets",
+        description: "Houve um erro ao comunicar-se com a API. Por favor, verifique sua conexão.",
+        variant: "destructive",
+      });
+      
+      // Só usamos mock em caso de falha absoluta
+      if (!useMockData) {
+        // Se não estávamos usando mock, mas a API falhou, lançamos o erro
+        throw error;
+      }
+      
+      // Se já estávamos em modo mock, usamos os dados de fallback
+      console.log('Usando dados mockados como fallback devido ao erro na API');
     }
     
+    // Só chegamos aqui se useMockData=true e aconteceu um erro na API
     // Simular um pequeno atraso para parecer que está buscando dados
     await new Promise(resolve => setTimeout(resolve, 500));
     console.log('Retornando dados mock para tickets');
     return mockTickets;
   } catch (error) {
     console.error('Erro ao buscar tickets:', error);
-    toast({
-      title: "Erro ao buscar tickets",
-      description: "Não foi possível buscar os tickets. Usando dados locais.",
-      variant: "destructive",
-    });
-    return mockTickets;
+    throw error;
   }
 };
 
@@ -246,35 +257,49 @@ export const createTicket = async (ticket: NewTicket): Promise<ApiTicket> => {
   console.log('Criando novo ticket:', ticket);
   
   try {
-    // Tentamos criar na API real primeiro
-    if (!useMockData) {
-      try {
-        const url = getApiUrl('createTicket');
-        console.log('URL para criar ticket:', url);
-        
-        // Obter modelo de requisição da configuração
-        const requestBody = getRequestBody('createTicket', ticket);
-        console.log('Corpo da requisição:', requestBody);
-        
-        const response = await fetchWithTimeout(url, {
-          method: 'POST',
-          body: JSON.stringify(requestBody)
-        });
-        
-        if (response.ok) {
-          const createdTicket = await response.json();
-          console.log('Ticket criado na API real:', createdTicket);
-          return createdTicket;
-        } else {
-          throw new Error(`Erro ao criar ticket: ${response.status}`);
+    // Sempre tentamos criar na API real primeiro
+    try {
+      const url = getApiUrl('createTicket');
+      console.log('URL para criar ticket:', url);
+      
+      // Obter modelo de requisição da configuração
+      const requestBody = getRequestBody('createTicket', ticket);
+      console.log('Corpo da requisição:', requestBody);
+      
+      const response = await fetchWithTimeout(url, {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+        headers: {
+          'Content-Type': 'application/json'
         }
-      } catch (error) {
-        console.warn('Erro ao criar na API real, usando dados mock:', error);
-        useMockData = true; // Fallback para dados mock
+      });
+      
+      if (response.ok) {
+        const createdTicket = await response.json();
+        console.log('Ticket criado na API real:', createdTicket);
+        return createdTicket;
+      } else {
+        throw new Error(`Erro ao criar ticket: ${response.status}`);
       }
+    } catch (error) {
+      console.warn('Erro ao criar na API real:', error);
+      
+      // Notificar o erro ao usuário
+      toast({
+        title: "Erro ao criar ticket",
+        description: "Não foi possível criar o ticket na API. Verifique sua conexão.",
+        variant: "destructive",
+      });
+      
+      // Se não devemos usar dados mock, propagamos o erro
+      if (!useMockData) {
+        throw error;
+      }
+      
+      console.log('Usando modo mock para criação de ticket devido ao erro');
     }
     
-    // Simulação de criação local
+    // Simulação de criação local apenas se estiver em modo mock
     await new Promise(resolve => setTimeout(resolve, 300));
     
     const newTicket: ApiTicket = {
@@ -539,7 +564,7 @@ export const createComment = async (comment: NewComment): Promise<ApiComment> =>
   }
 };
 
-// Inicializar a verificação da API - Adicionando verificação mais clara do estado
+// Inicializar a verificação da API com notificação clara
 checkApiConnection().then(isConnected => {
   console.log(`Status da API: ${isConnected ? 'CONECTADA' : 'DESCONECTADA'}`);
   console.log(`Usando dados: ${useMockData ? 'MOCK' : 'REAIS'}`);
@@ -551,10 +576,10 @@ checkApiConnection().then(isConnected => {
       description: "Usando dados reais do servidor.",
     });
   } else {
-    console.log('🟠 Usando dados simulados (mock) para operações de dados');
+    console.log('🔴 Falha ao conectar com a API');
     toast({
-      title: "API Desconectada",
-      description: "Usando dados simulados localmente.",
+      title: "API Indisponível",
+      description: "Não foi possível conectar à API. Verifique sua conexão ou as configurações de API.",
       variant: "destructive",
     });
   }

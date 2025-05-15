@@ -18,13 +18,13 @@ const ApiTestButton = () => {
       if (connected) {
         toast({
           title: "API Conectada",
-          description: "A conexão com a API foi estabelecida com sucesso! Atualize a página para carregar os dados reais.",
+          description: "A conexão com a API foi estabelecida com sucesso! A página será recarregada para usar dados reais.",
         });
         
-        // Força recarregar a página para usar os dados reais
-        if (confirm("Conexão estabelecida! Deseja recarregar a página para usar dados reais?")) {
+        // Sempre recarregamos a página para garantir o uso de dados reais
+        setTimeout(() => {
           window.location.reload();
-        }
+        }, 1500);
       } else {
         toast({
           title: "API Desconectada",
